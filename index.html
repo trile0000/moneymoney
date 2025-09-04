@@ -38,7 +38,16 @@
     }
     header { position: sticky; top: 0; z-index: 20; background: var(--bg); padding: 12px 0 8px; backdrop-filter: saturate(180%) blur(10px); }
     .title { font-size: 22px; font-weight: 800; letter-spacing: -0.2px; display: flex; align-items: center; gap: 8px; }
-    .title .logo { width: 28px; height: 28px; border-radius: 8px; background: var(--brand); color: white; display: grid; place-items: center; font-weight: 900; }
+    .title .logo {
+      width: 36px; height: 36px; border-radius: 8px; background: #fff;
+      display: grid; place-items: center;
+      box-shadow: 0 2px 8px rgba(37,99,235,.09);
+      overflow: hidden;
+    }
+    .title .logo img {
+      width: 100%; height: 100%; object-fit: contain; display: block;
+      background: transparent;
+    }
     .row { display: grid; grid-template-columns: 1fr; gap: 12px; }
     @media (min-width: 720px) { .row-2 { grid-template-columns: 1fr 1fr; } }
     .card { background: var(--card); border-radius: 16px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid rgba(2,6,23,0.06); }
@@ -66,6 +75,37 @@
     .legend .rowl { display: flex; gap: 8px; align-items: center; font-size: 13px; }
     .dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
     .muted { color: var(--muted); font-size: 12px; }
+    .mascot-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 10px 0 0 0;
+    }
+    .mascot-img {
+      width: 90px;
+      height: 90px;
+      object-fit: contain;
+      border-radius: 20%;
+      box-shadow: 0 2px 8px rgba(37,99,235,.09);
+      background: rgba(255,255,255,0.7);
+      transition: filter .2s;
+    }
+    .mascot-tx {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+      border-radius: 20%;
+      background: rgba(255,255,255,0.85);
+      margin-bottom: 8px;
+    }
+    .mascot-chart {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+      border-radius: 20%;
+      background: rgba(255,255,255,0.85);
+      margin-bottom: 8px;
+    }
     footer { text-align: center; color: var(--muted); font-size: 12px; padding-top: 8px; }
   </style>
 </head>
@@ -73,13 +113,19 @@
   <div class="container">
     <header>
       <div class="title">
-        <div class="logo">₫</div> Quản Lý Chi Tiêu
+        <div class="logo">
+          <img src="assets/mascot/tiger_logo.png" alt="Mascot logo" />
+        </div>
+        Quản Lý Chi Tiêu
       </div>
     </header>
 
     <div class="row row-2">
       <section class="card">
         <h3>Thêm khoản thu/chi</h3>
+        <div class="mascot-box">
+          <img id="mascotTxType" class="mascot-tx" src="assets/mascot/tiger_spending.png" alt="Mascot thu/chi" />
+        </div>
         <div class="grid grid-2">
           <div class="field">
             <label class="label">Ngày</label>
@@ -117,7 +163,10 @@
           </div>
           <div class="field" style="grid-column: 1 / -1; display:flex; gap:10px;">
             <button id="addBtn" class="btn">Thêm</button>
-            <button id="clearBtn" class="btn secondary" title="Xoá tất cả dữ liệu (cẩn thận!)">Xoá tất cả</button>
+            <button id="clearBtn" class="btn secondary" title="Xoá tất cả dữ liệu (cẩn thận!)">
+              <img src="assets/mascot/tiger_warning.png" alt="Warning" style="width:22px;height:22px;vertical-align:middle;" />
+              Xoá tất cả
+            </button>
           </div>
         </div>
       </section>
@@ -130,6 +179,9 @@
             <input id="month" class="control" type="month" />
           </div>
           <div class="muted" id="countInfo" style="text-align:right;"></div>
+        </div>
+        <div class="mascot-box">
+          <img id="mascotBalance" class="mascot-img" src="assets/mascot/tiger_rich.png" alt="Mascot balance" />
         </div>
         <div class="summary" style="margin-top:10px;">
           <div class="pill">
@@ -156,6 +208,9 @@
 
       <section class="card">
         <h3>Biểu đồ chi theo danh mục</h3>
+        <div class="mascot-box">
+          <img class="mascot-chart" src="assets/mascot/tiger_chart.png" alt="Mascot chart" />
+        </div>
         <canvas id="pie" width="320" height="320" style="width:100%; height:auto;"></canvas>
         <div class="legend" id="legend"></div>
       </section>
@@ -331,10 +386,29 @@
     function renderSummary(items) {
       const sIn = sum(items, "thu");
       const sOut = sum(items, "chi");
+      const balance = sIn - sOut;
       $("#sumIn").textContent = formatVND(sIn);
       $("#sumOut").textContent = formatVND(sOut);
-      $("#balance").textContent = formatVND(sIn - sOut);
+      $("#balance").textContent = formatVND(balance);
       $("#countInfo").textContent = `${items.length} giao dịch`;
+
+      // Đổi ảnh mascot theo số dư
+      const mascotImg = $("#mascotBalance");
+      if (mascotImg) {
+        if (balance > 0) {
+          mascotImg.src = "assets/mascot/tiger_rich.png";
+          mascotImg.alt = "Cọp vàng nhiều tiền";
+          mascotImg.style.filter = "";
+        } else if (balance < 0) {
+          mascotImg.src = "assets/mascot/tiger_poor.png";
+          mascotImg.alt = "Cọp vàng hết tiền";
+          mascotImg.style.filter = "grayscale(60%) blur(0.2px)";
+        } else {
+          mascotImg.src = "assets/mascot/tiger_logo.png";
+          mascotImg.alt = "Cọp vàng trung lập";
+          mascotImg.style.filter = "";
+        }
+      }
     }
 
     function render() {
@@ -366,6 +440,15 @@
     });
     $("#clearBtn").addEventListener("click", clearAll);
     $("#month").addEventListener("change", render);
+
+    // Mascot đổi ảnh theo loại giao dịch thu/chi
+    $("#type").addEventListener("change", function() {
+      const v = this.value;
+      $("#mascotTxType").src = v === "chi"
+        ? "assets/mascot/tiger_spending.png"
+        : "assets/mascot/tiger_income.png";
+      $("#mascotTxType").alt = v === "chi" ? "Cọp chi tiền" : "Cọp nhận tiền";
+    });
 
     // Register Service Worker (PWA)
     if ("serviceWorker" in navigator) {
