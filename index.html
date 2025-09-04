@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Quản Lý Chi Tiêu</title>
   <meta name="theme-color" content="#7a2a1a" />
-  <link rel="apple-touch-icon" href="public/assets/mascot/tiger_logo.png" />
-  <link rel="icon" href="public/assets/mascot/tiger_logo.png" />
+  <link rel="apple-touch-icon" href="assets/mascot/tiger_logo.png" />
+  <link rel="icon" href="assets/mascot/tiger_logo.png" />
   <link rel="manifest" href="manifest.json" />
 
   <!-- Font vui tươi -->
@@ -21,7 +21,7 @@
     .container{max-width:1160px; padding:24px; margin:0 auto}
     header{display:flex; align-items:center; justify-content:space-between; margin-bottom:18px}
     .title{display:flex; align-items:center; gap:10px}
-    .logo{width:36px; height:36px; border-radius:10px; background:#fff url('public/assets/mascot/tiger_logo.png') center/cover no-repeat; box-shadow:var(--shadow)}
+    .logo{width:36px; height:36px; border-radius:10px; background:#fff url('assets/mascot/tiger_logo.png') center/cover no-repeat; box-shadow:var(--shadow)}
     h1{font-size:24px; margin:0}
     .grid{display:grid; gap:16px; grid-template-columns:1fr}
     @media(min-width:980px){.grid{grid-template-columns:1.1fr 1fr}}
@@ -80,7 +80,7 @@
       <!-- Tổng kết -->
       <div class="card"><div class="card-body">
         <h2>Tổng kết tháng</h2>
-        <div class="mascot-center"><img id="mascotBalance" src="public/assets/mascot/tiger_logo.png"/></div>
+        <div class="mascot-center"><img id="mascotBalance" src="assets/mascot/tiger_logo.png"/></div>
         <div id="balanceStatus" class="status-bar status--neutral">🙂 Cân bằng</div>
         <div class="kpis">
           <div class="kpi"><h4>Thu</h4><div id="sumIncome" class="val">0</div></div>
@@ -115,7 +115,7 @@
   const $ = (s)=>document.querySelector(s);
   const STORAGE_KEY = 'mm_transactions_v1';
   const SETTINGS_KEY = 'mm_settings_v1';
-  const ASSET = 'public/assets/mascot/';
+  const ASSET = 'assets/mascot/';
 
   const listHolder = $('#listHolder');
   const emptyState = $('#emptyState');
