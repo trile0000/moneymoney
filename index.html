@@ -109,7 +109,7 @@
           </div>
           <div class="field">
             <label class="label">Số tiền (₫)</label>
-            <input id="amount" inputmode="decimal" class="control" type="number" placeholder="0" />
+            <input id="amount" inputmode="decimal" class="control" type="text" placeholder="0" autocomplete="off" />
           </div>
           <div class="field" style="grid-column: 1 / -1;">
             <label class="label">Ghi chú</label>
@@ -167,17 +167,35 @@
   <script>
     // --- Utilities
     const $ = (sel) => document.querySelector(sel);
+    // Định dạng dấu phẩy khi nhập số lượng tiền & ngăn nhập ký tự không phải số
     const amountInput = $("#amount");
+    amountInput.addEventListener("beforeinput", function(e) {
+      // Cho phép xóa/backspace
+      if (
+        e.inputType === "deleteContentBackward" ||
+        e.inputType === "deleteContentForward" ||
+        e.inputType === "deleteByCut" ||
+        e.inputType === "deleteByDrag"
+      ) return;
+      // Cho phép nhập số, ngăn ký tự lạ
+      if (!e.data || !/^\d+$/.test(e.data)) e.preventDefault();
+    });
     amountInput.addEventListener("input", function(e) {
-      // Lấy giá trị không phải số
+      // Lấy tất cả số trong chuỗi nhập vào
       let val = this.value.replace(/[^0-9]/g, '');
       if (!val) {
         this.value = '';
         return;
       }
-      // Định dạng thành số có dấu phẩy
-      this.value = Number(val).toLocaleString('vi-VN');
+      // Giới hạn số chữ số nếu muốn, ví dụ tối đa 12 số
+      val = val.slice(0, 12);
+      // Định dạng lại
+      const formatted = Number(val).toLocaleString('vi-VN');
+      this.value = formatted;
+      // Đặt lại vị trí con trỏ ở cuối (tránh bị nhảy về đầu)
+      this.setSelectionRange(this.value.length, this.value.length);
     });
+    // Format VND cho mọi nơi hiển thị
     const formatVND = (n) => (n||0).toLocaleString('vi-VN') + '₫';
     const today = new Date();
     $("#month").value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
@@ -330,9 +348,11 @@
     $("#addBtn").addEventListener("click", () => {
       const tx = {
         id: String(Date.now()) + Math.random().toString(36).slice(2),
+        // Nếu không chọn ngày, sẽ tự động lấy ngày hôm nay
         date: $("#date").value || new Date().toISOString().slice(0,10),
         type: $("#type").value,
         category: $("#category").value.trim(),
+        // Lấy giá trị số, bỏ dấu phẩy, nếu rỗng là 0
         amount: Number($("#amount").value.replace(/[^0-9]/g, "") || 0),
         note: $("#note").value.trim()
       };
@@ -342,7 +362,7 @@
       $("#note").value = "";
       $("#category").value = "";
       $("#type").value = "chi";
-      $("#date").focus();
+      $("#amount").focus(); // focus lại vào ô nhập tiền
     });
     $("#clearBtn").addEventListener("click", clearAll);
     $("#month").addEventListener("change", render);
@@ -356,6 +376,5 @@
 
     render();
   </script>
-
 </body>
 </html>
