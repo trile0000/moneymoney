@@ -167,6 +167,17 @@
   <script>
     // --- Utilities
     const $ = (sel) => document.querySelector(sel);
+    const amountInput = $("#amount");
+    amountInput.addEventListener("input", function(e) {
+      // Lấy giá trị không phải số
+      let val = this.value.replace(/[^0-9]/g, '');
+      if (!val) {
+        this.value = '';
+        return;
+      }
+      // Định dạng thành số có dấu phẩy
+      this.value = Number(val).toLocaleString('vi-VN');
+    });
     const formatVND = (n) => (n||0).toLocaleString('vi-VN') + '₫';
     const today = new Date();
     $("#month").value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
@@ -319,13 +330,12 @@
     $("#addBtn").addEventListener("click", () => {
       const tx = {
         id: String(Date.now()) + Math.random().toString(36).slice(2),
-        date: $("#date").value,
+        date: $("#date").value || new Date().toISOString().slice(0,10),
         type: $("#type").value,
         category: $("#category").value.trim(),
-        amount: Number($("#amount").value || 0),
+        amount: Number($("#amount").value.replace(/[^0-9]/g, "") || 0),
         note: $("#note").value.trim()
       };
-      if (!tx.date) return alert("Chọn ngày");
       if (!tx.amount || tx.amount <= 0) return alert("Nhập số tiền > 0");
       addTx(tx);
       $("#amount").value = "";
