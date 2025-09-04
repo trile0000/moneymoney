@@ -171,7 +171,14 @@
       "#2563eb","#10b981","#f59e0b","#ef4444","#8b5cf6",
       "#14b8a6","#ec4899","#22c55e","#eab308","#06b6d4"
     ];
-
+    function escapeHTML(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
     function load() {
       try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
       catch { return []; }
@@ -207,9 +214,7 @@
       el.innerHTML = items.sort((a,b)=> (a.date||"").localeCompare(b.date)).map(x => {
         const sign = x.type === "chi" ? "-" : "+";
         const cls = x.type === "chi" ? "minus" : "plus";
-        const note = x.note ? `<div class='muted'>{
-            x.note.replace(/&/g,'&amp;').replace(/</g,'&lt;')
-          }</div>` : "";
+        const note = x.note ? `<div class='muted'>${escapeHTML(x.note)}</div>` : "";
         return `<div class="item">
           <div class="muted" style="font-variant-numeric: tabular-nums;">${x.date || ""}</div>
           <div>
@@ -336,17 +341,6 @@
 
     render();
   </script>
-
-<script>
-function escapeHTML(str) {
-  if (!str) return '';
-  return str.replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-}
-</script>
 
 </body>
 </html>
