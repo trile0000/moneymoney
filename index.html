@@ -5,63 +5,52 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Quản Lý Chi Tiêu</title>
   <meta name="theme-color" content="#7a2a1a" />
+  <link rel="apple-touch-icon" href="assets/mascot/tiger_logo.png" />
+  <link rel="icon" href="assets/mascot/tiger_logo.png" />
+  <link rel="manifest" href="manifest.json" />
+
   <!-- Font vui tươi -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
-  <!-- App icons -->
-  <link rel="apple-touch-icon" href="assets/mascot/tiger_logo.png" />
-  <link rel="icon" href="assets/mascot/tiger_logo.png" />
-  <link rel="manifest" href="manifest.json" />
+
   <style>
     :root{
-      /* Tông đỏ nâu (giữ nguyên) */
       --primary:#8B2E1A; --primary-600:#7A2A1A; --primary-700:#662316; --primary-50:#F7E9E6;
       --bg:#f6f4f3; --surface:#ffffff; --text:#231815; --muted:#8a7975; --danger:#b3261e; --ok:#2e7d32; --ring:#e9d2cd;
       --radius:18px; --shadow:0 10px 30px rgba(139,46,26,.08);
     }
     *{box-sizing:border-box}
-    html,body{height:100%}
     body{
-      margin:0; font-family: 'Baloo 2', 'Quicksand', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, sans-serif; color:var(--text);
+      margin:0; font-family:'Baloo 2','Quicksand',ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
       background: radial-gradient(1200px 600px at 10% -10%, var(--primary-50), transparent), var(--bg);
-      padding-top: calc(env(safe-area-inset-top) + 0px); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right);
+      color:var(--text);
+      padding-top: calc(env(safe-area-inset-top) + 0px);
+      padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right);
     }
-    input, select, textarea{ font-size:16px; }
     .container{max-width:1160px; padding:24px; margin:0 auto}
-
     header{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px}
     .title{display:flex; align-items:center; gap:10px}
     .logo{width:36px; height:36px; border-radius:10px; background:#fff url('assets/mascot/tiger_logo.png') center/cover no-repeat; box-shadow:var(--shadow)}
     h1{font-size:24px; margin:0}
-
-    .grid{ display:grid; gap:16px; grid-template-columns: 1fr; grid-auto-rows:minmax(180px,auto); }
-    @media (min-width: 980px){ .grid{ grid-template-columns: 1.1fr 1fr; } }
-
-    .card{background:var(--surface); border:1px solid var(--ring); border-radius:var(--radius); box-shadow:var(--shadow)}
-    .card .card-body{padding:18px}
-    .card h2{font-size:18px; margin:0 0 12px;}
-
     .actions{display:flex; flex-wrap:wrap; gap:10px}
     .btn{appearance:none; border:none; cursor:pointer; padding:12px 14px; border-radius:14px; font-weight:700}
     .btn.primary{background:var(--primary); color:#fff}
     .btn.ghost{background:#fff; color:var(--primary-700); border:1px solid var(--ring)}
     .btn.danger{background:var(--danger); color:#fff}
-    .btn.icon{display:inline-flex; align-items:center; gap:8px}
-
-    /* Form */
+    .grid{ display:grid; gap:16px; grid-template-columns: 1fr; grid-auto-rows:minmax(180px,auto); }
+    @media (min-width: 980px){ .grid{ grid-template-columns: 1.1fr 1fr; } }
+    .card{background:var(--surface); border:1px solid var(--ring); border-radius:var(--radius); box-shadow:var(--shadow)}
+    .card .card-body{padding:18px}
+    .card h2{font-size:18px; margin:0 0 12px;}
     .form-grid{display:grid; gap:12px}
     @media (min-width:480px){ .form-grid{grid-template-columns: 1fr 1fr} }
     label{font-size:13px; color:var(--muted)}
-    input, select, textarea{ width:100%; padding:12px 14px; border-radius:12px; border:1px solid var(--ring); outline:none; background:#fff; }
-
-    /* KPIs */
+    input, select, textarea{ width:100%; padding:12px 14px; border-radius:12px; border:1px solid var(--ring); outline:none; background:#fff; font-size:16px; }
     .kpis{display:grid; grid-template-columns: repeat(3,1fr); gap:10px}
     .kpi{background:#fff; border:1px solid var(--ring); border-radius:14px; padding:12px; text-align:center}
     .kpi h4{margin:0 0 4px; font-size:12px; color:var(--muted)}
     .kpi .val{font-weight:800; font-size:20px}
-
-    /* List */
     .list{display:flex; flex-direction:column; gap:10px}
     .tx{display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:10px; padding:12px; background:#fff; border:1px solid var(--ring); border-radius:14px; touch-action: pan-y}
     .tx .date{font-size:12px; color:var(--muted)}
@@ -69,16 +58,31 @@
     .amt{font-weight:800}
     .amt.out{color:var(--danger)}
     .amt.in{color:var(--ok)}
-
-    /* Chart */
     .chart-controls{display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px}
     .chart-box{height:320px; position:relative; width:100%}
     .chart-box canvas{position:absolute; inset:0; width:100%; height:100%}
-
-    /* Mascots */
     .mascot-center{ text-align:center; margin:16px 0; }
     .mascot-center img{ width:100px; height:100px; object-fit:contain; image-rendering:auto }
-
+    /* Status bar theo số dư */
+    .status-bar{ display:flex; align-items:center; justify-content:center; gap:8px; padding:10px 12px; border:1px solid var(--ring); border-radius:12px; font-weight:700; }
+    .status--rich{ background:#e8f5e9; border-color:#c8e6c9; color:#1b5e20; }
+    .status--neutral{ background:#fff8e1; border-color:#ffe0b2; color:#6d4c41; }
+    .status--poor{ background:#fdecea; border-color:#f5c6c3; color:#b3261e; }
+    /* Mascot animation */
+    @keyframes pop { 0%{ transform:scale(.9) rotate(0deg)} 50%{ transform:scale(1.08) rotate(-2deg)} 100%{ transform:scale(1) rotate(0)} }
+    .mascot-animate{ animation: pop .6s ease; }
+    /* Modal settings */
+    .modal{ position:fixed; inset:0; background:rgba(0,0,0,.28); display:none; align-items:center; justify-content:center; z-index:10000; padding:20px }
+    .modal.open{ display:flex }
+    .modal .panel{ width:min(640px,100%); background:#fff; border:1px solid var(--ring); border-radius:16px; box-shadow:var(--shadow); overflow:hidden }
+    .modal header{ padding:14px 16px; border-bottom:1px solid var(--ring) }
+    .modal .content{ padding:16px; display:grid; gap:12px }
+    .grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:12px }
+    @media (max-width:520px){ .grid-2{ grid-template-columns:1fr } }
+    .modal .actions{ padding:12px 16px; border-top:1px solid var(--ring); display:flex; justify-content:flex-end; gap:10px }
+    /* Toast */
+    .toast{ position:fixed; left:50%; transform:translateX(-50%); bottom:24px; background:#1b5e20; color:#fff; padding:10px 14px; border-radius:12px; box-shadow:var(--shadow); display:none; z-index:10001; font-weight:700 }
+    .toast.show{ display:block }
   </style>
 </head>
 <body>
@@ -89,6 +93,7 @@
         <h1>Quản Lý Chi Tiêu</h1>
       </div>
       <div class="actions">
+        <button id="openSettings" class="btn ghost icon" title="Cài đặt">⚙️ Cài đặt</button>
         <button id="exportCSV" class="btn ghost icon" title="Xuất CSV">📄 Xuất CSV</button>
         <button id="clearAll" class="btn danger icon" title="Xóa tất cả dữ liệu">🗑️ Xóa tất cả</button>
       </div>
@@ -144,7 +149,7 @@
         </div>
       </div>
 
-      <!-- Tổng kết tháng + mascot balance -->
+      <!-- Tổng kết tháng -->
       <div class="card">
         <div class="card-body">
           <h2>Tổng kết tháng</h2>
@@ -156,6 +161,7 @@
           <div class="mascot-center">
             <img id="mascotBalance" src="assets/mascot/tiger_rich.png" alt="Mascot balance" />
           </div>
+          <div id="balanceStatus" class="status-bar status--neutral">🙂 Cân bằng tốt. Giữ nhịp chi tiêu nhé!</div>
           <div class="kpis">
             <div class="kpi"><h4>Tổng Thu</h4><div class="val" id="sumIncome">0</div></div>
             <div class="kpi"><h4>Tổng Chi</h4><div class="val" id="sumExpense">0</div></div>
@@ -173,7 +179,7 @@
         </div>
       </div>
 
-      <!-- Biểu đồ + mascot minh hoạ -->
+      <!-- Biểu đồ -->
       <div class="card">
         <div class="card-body">
           <h2>Biểu đồ</h2>
@@ -189,91 +195,148 @@
               <option value="line">Đường thẳng</option>
             </select>
           </div>
-          <div class="chart-box">
-            <canvas id="chart"></canvas>
-          </div>
+          <div class="chart-box"><canvas id="chart"></canvas></div>
           <div id="chartLegend" style="margin-top:8px; font-size:13px; color:var(--muted)"></div>
         </div>
       </div>
-
     </section>
-
-    <footer>
-      <span>PWA offline · Lưu dữ liệu trên thiết bị của bạn.</span>
-    </footer>
   </div>
 
+  <!-- Modal Cài đặt -->
+  <div id="settingsModal" class="modal" aria-hidden="true">
+    <div class="panel">
+      <header><strong>Cài đặt</strong></header>
+      <div class="content">
+        <div class="grid-2">
+          <div><label>Ngưỡng Tier 2 (Dư dả) — &ge; đ</label><input id="stTh2" type="number" min="0" step="1000" placeholder="5000000" /></div>
+          <div><label>Ngưỡng Tier 3 (Siêu khá) — &ge; đ</label><input id="stTh3" type="number" min="0" step="1000" placeholder="10000000" /></div>
+          <div><label>Ngưỡng Tier 4 (Đại gia) — &ge; đ</label><input id="stTh4" type="number" min="0" step="1000" placeholder="20000000" /></div>
+          <div><label>Kỷ lục cao nhất</label><input id="stBest" type="text" disabled value="Chưa có" /></div>
+        </div>
+        <div><label>Thông điệp Tier 0 (Âm)</label><input id="msgT0" type="text" placeholder="😿 Âm ({sign}{amount}). Thử cắt giảm vài khoản không cần thiết nhé!" /></div>
+        <div><label>Thông điệp Tier 1 (Dư nhẹ)</label><input id="msgT1" type="text" placeholder="🙂 Dư nhẹ ({sign}{amount}). Đặt thêm mục tiêu tiết kiệm nhé!" /></div>
+        <div><label>Thông điệp Tier 2 (Dư dả)</label><input id="msgT2" type="text" placeholder="🤑 Dư dả ({sign}{amount})! Tiếp tục tiết kiệm thông minh!" /></div>
+        <div><label>Thông điệp Tier 3 (Siêu khá)</label><input id="msgT3" type="text" placeholder="🚀 Siêu khá ({sign}{amount})! Xịn quá, duy trì đà này!" /></div>
+        <div><label>Thông điệp Tier 4 (Đại gia)</label><input id="msgT4" type="text" placeholder="👑 Đại gia ({sign}{amount})! Đặt mục tiêu đầu tư dài hạn nhé!" /></div>
+      </div>
+      <div class="actions">
+        <button id="closeSettings" class="btn ghost">Hủy</button>
+        <button id="saveSettings" class="btn primary">Lưu</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="appToast" class="toast">Đã lưu cài đặt</div>
+
+  <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- App JS -->
   <script>
     const $ = (s)=>document.querySelector(s);
 
     // Elements
-    const listHolder = $('#listHolder');
-    const emptyState = $('#emptyState');
-    const sumIncomeEl = $('#sumIncome');
-    const sumExpenseEl = $('#sumExpense');
-    const sumBalanceEl = $('#sumBalance');
-    const chartEl = $('#chart');
-    const chartTypeSel = $('#chartType');
-    const chartModeSel = $('#chartMode');
-    const chartLegend = $('#chartLegend');
+    const listHolder = $('#listHolder'); const emptyState = $('#emptyState');
+    const sumIncomeEl = $('#sumIncome'); const sumExpenseEl = $('#sumExpense'); const sumBalanceEl = $('#sumBalance');
+    const chartEl = $('#chart'); const chartTypeSel = $('#chartType'); const chartModeSel = $('#chartMode'); const chartLegend = $('#chartLegend');
+    const mascotBalance = $('#mascotBalance'); const mascotChart = $('#mascotChart'); const balanceStatus = $('#balanceStatus');
+    const txDateEl = $('#txDate'); const filterMonthEl = $('#filterMonth'); const txCountEl = $('#txCount');
 
-    const mascotBalance = $('#mascotBalance');
-    const mascotChart = $('#mascotChart');
-
-    const txDateEl = $('#txDate');
-    const filterMonthEl = $('#filterMonth');
-    const txCountEl = $('#txCount');
-
-    let chart; let gestureBound=false;
+    let chart; let gestureBound=false; let lastMascotPick=null; let lastTier=0; let bestTier=0;
 
     const STORAGE_KEY = 'mm_transactions_v1';
+    const SETTINGS_KEY = 'mm_settings_v1';
     const ASSET = 'assets/mascot/';
 
+    // Storage
     function load(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [] }catch{ return [] } }
     function save(data){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)) }
 
+    // Number format
     function vnNumberFormat(n){ return Number(n||0).toLocaleString('vi-VN'); }
 
-    // Format số tiền khi nhập
-    const amountInput = $('#amount');
-    amountInput.addEventListener('input', ()=>{
-      const digits = amountInput.value.replace(/\D/g, '');
-      amountInput.value = digits ? Number(digits).toLocaleString('vi-VN') : '';
-    });
-    function parseAmountField(){ return Number((amountInput.value||'').replace(/\D/g,'')||0); }
+    // Settings
+    function loadSettings(){
+      const defaults = {
+        thresholds: { t2: 5000000, t3: 10000000, t4: 20000000 },
+        messages: {
+          t0: '😿 Âm ({sign}{amount}). Thử cắt giảm vài khoản không cần thiết nhé!',
+          t1: '🙂 Dư nhẹ ({sign}{amount}). Đặt thêm mục tiêu tiết kiệm nhé!',
+          t2: '🤑 Dư dả ({sign}{amount})! Tiếp tục tiết kiệm thông minh!',
+          t3: '🚀 Siêu khá ({sign}{amount})! Xịn quá, duy trì đà này!',
+          t4: '👑 Đại gia ({sign}{amount})! Đặt mục tiêu đầu tư dài hạn nhé!'
+        },
+        bestTier: 0
+      };
+      try{
+        const got = JSON.parse(localStorage.getItem(SETTINGS_KEY)||'null');
+        return got ? { ...defaults, ...got, thresholds: { ...defaults.thresholds, ...(got.thresholds||{}) }, messages: { ...defaults.messages, ...(got.messages||{}) } } : defaults;
+      }catch{ return defaults }
+    }
+    function saveSettings(s){ localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }
+    let SETTINGS = loadSettings();
+    bestTier = SETTINGS.bestTier||0;
 
-    // Helpers ngày
+    // Amount field formatting
+    const amountInput = $('#amount');
+    if(amountInput){
+      amountInput.addEventListener('input', ()=>{
+        const digits = amountInput.value.replace(/\D/g, '');
+        amountInput.value = digits ? Number(digits).toLocaleString('vi-VN') : '';
+      });
+    }
+    function parseAmountField(){ const el=$('#amount'); return el? Number((el.value||'').replace(/\D/g,'')||0) : 0; }
+
+    // Date helpers
     const ymd = (ts)=>{ const d=new Date(ts); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` };
     const ym = (ts)=>{ const d=new Date(ts); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` };
-    function applyMonthFilter(arr){ const v = filterMonthEl.value; if(!v) return arr; return arr.filter(t => ym(t.createdAt||Date.now()) === v); }
+    function applyMonthFilter(arr){ const v = filterMonthEl? filterMonthEl.value: ''; if(!v) return arr; return arr.filter(t => ym(t.createdAt||Date.now()) === v); }
 
-    // Bảng màu tươi cho chart
+    // Chart palette
     function palette(n){
       const base=['#b3261e','#2e7d32','#7A2A1A','#8B2E1A','#ff8f00','#1565c0','#6a1b9a','#00897b','#c2185b','#455a64','#ef6c00','#5d4037','#8e24aa','#43a047','#1e88e5'];
       const out=[]; for(let i=0;i<n;i++){ out.push(base[i%base.length]); } return out;
     }
 
+    // Mascots & status
     function updateMascots(income, expense){
       const balance = income - expense;
-      // 1) Mascot theo số dư
-      let pick = 'tiger_logo.png';
-      if(balance > 0){ pick = 'tiger_rich.png'; }
-      else if(balance < 0){ pick = 'tiger_poor.png'; }
-      else { pick = 'tiger_income.png'; }
-      if(mascotBalance) mascotBalance.src = ASSET + pick;
+      const absFmt = vnNumberFormat(Math.abs(balance)) + 'đ';
+      const sign = balance>0? '+': balance<0? '-': '';
 
-      // 2) Mascot ở khu biểu đồ theo chế độ
-      if(mascotChart){ mascotChart.src = ASSET + (chartModeSel.value==='byCategory' ? 'tiger_spending.png' : 'tiger_income.png'); }
+      const { t2, t3, t4 } = SETTINGS.thresholds;
+      let tier = 0; if(balance > 0) tier = 1; if(balance >= t2) tier = 2; if(balance >= t3) tier = 3; if(balance >= t4) tier = 4;
+
+      let pick; let statusClass='status--neutral';
+      if(tier>=2){ pick='tiger_rich.png'; statusClass='status--rich'; }
+      else if(tier===1){ pick='tiger_income.png'; statusClass='status--neutral'; }
+      else { pick='tiger_poor.png'; statusClass='status--poor'; }
+
+      const msgMap = SETTINGS.messages;
+      const templ = tier===4? msgMap.t4 : tier===3? msgMap.t3 : tier===2? msgMap.t2 : tier===1? msgMap.t1 : msgMap.t0;
+      const message = templ.replace('{sign}', sign).replace('{amount}', absFmt);
+
+      if(mascotBalance){
+        if(pick !== lastMascotPick){
+          mascotBalance.classList.remove('mascot-animate');
+          void mascotBalance.offsetWidth;
+          mascotBalance.classList.add('mascot-animate');
+          lastMascotPick = pick;
+        }
+        mascotBalance.src = ASSET + pick;
+      }
+      if(balanceStatus){ balanceStatus.className = 'status-bar ' + statusClass; balanceStatus.textContent = message; }
+      if(mascotChart){ mascotChart.src = ASSET + ((chartModeSel && chartModeSel.value==='byCategory') ? 'tiger_spending.png' : 'tiger_income.png'); }
+
+      if(tier > lastTier){ fireConfetti(tier); }
+      if(tier > bestTier){ bestTier = tier; SETTINGS.bestTier = tier; saveSettings(SETTINGS); showToast('🎉 Kỷ lục mới: Tier ' + tier); }
+      lastTier = tier;
     }
 
+    // Render
     function render(){
-      // đảm bảo createdAt
-      const up = load().map(t=>({...t, createdAt: t.createdAt || Date.now()}));
-      save(up);
+      const up = load().map(t=>({...t, createdAt: t.createdAt || Date.now()})); save(up);
       const data = applyMonthFilter(up);
-
-      // tổng hợp
       let income=0, expense=0; listHolder.innerHTML='';
       emptyState.style.display = data.length? 'none':'flex';
       txCountEl.textContent = `${data.length} giao dịch`;
@@ -286,80 +349,111 @@
         const del = document.createElement('button'); del.className='btn danger'; del.textContent='X'; del.onclick=()=>removeOne(t.id);
         row.appendChild(left); row.appendChild(amt); row.appendChild(del); listHolder.appendChild(row);
       }
-
-      sumIncomeEl.textContent = vnNumberFormat(income)+'đ';
-      sumExpenseEl.textContent = vnNumberFormat(expense)+'đ';
-      sumBalanceEl.textContent = vnNumberFormat(income-expense)+'đ';
-
+      sumIncomeEl.textContent = vnNumberFormat(income)+'đ'; sumExpenseEl.textContent = vnNumberFormat(expense)+'đ'; sumBalanceEl.textContent = vnNumberFormat(income-expense)+'đ';
       updateMascots(income, expense);
       renderChart(data, income, expense);
       bindGestures();
     }
 
+    // Chart
     function renderChart(data, income, expense){
-      if(chart){ chart.destroy(); }
-      const type = chartTypeSel.value; const mode = chartModeSel.value;
+      if(!chartEl || typeof Chart === 'undefined') return;
+      if(chart){ try{ chart.destroy(); }catch(e){} }
+      const type = (chartTypeSel && chartTypeSel.value) || 'doughnut';
+      const mode = (chartModeSel && chartModeSel.value) || 'byCategory';
       let labels=[], values=[], legendText='';
-      if(mode==='totals'){
-        labels=['Thu','Chi']; values=[income, expense]; legendText='Tổng hợp thu/chi';
-      } else {
-        const map=new Map();
-        for(const t of data){ if(t.type!=='expense') continue; const k=t.category||'Khác'; map.set(k,(map.get(k)||0)+(+t.amount||0)); }
-        labels=[...map.keys()]; values=[...map.values()]; legendText='Chi tiêu theo danh mục';
-      }
+      if(mode==='totals'){ labels=['Thu','Chi']; values=[income, expense]; legendText='Tổng hợp thu/chi'; }
+      else { const map=new Map(); for(const t of data){ if(t.type!=='expense') continue; const k=t.category||'Khác'; map.set(k,(map.get(k)||0)+(+t.amount||0)); } labels=[...map.keys()]; values=[...map.values()]; legendText='Chi tiêu theo danh mục'; }
+      // Fallback donut rỗng
+      const total = values.reduce((a,b)=>a+b,0);
+      if(values.length===0 || total===0){ labels=['Không có dữ liệu']; values=[0.0001]; }
       const colors = palette(values.length||2);
-      const dataset = { label: legendText, data: values,
-        backgroundColor: (type==='doughnut' || type==='bar')? colors: undefined,
-        borderColor: type==='line'? colors: undefined,
-        fill: type==='line'? false: undefined, borderWidth:2, tension: type==='line'? .3: undefined };
+      const dataset = { label: legendText, data: values, backgroundColor: (type==='doughnut' || type==='bar')? colors: undefined, borderColor: type==='line'? colors: undefined, fill: type==='line'? false: undefined, borderWidth:2, tension: type==='line'? .3: undefined };
       chart = new Chart(chartEl,{ type, data:{labels, datasets:[dataset]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:type==='doughnut'?'bottom':'top' }}, scales:(type==='bar'||type==='line')?{ y:{ beginAtZero:true } }:undefined }});
-      chartLegend.textContent = legendText;
+      if(chartLegend) chartLegend.textContent = legendText;
     }
 
-    // Gestures (long-press / swipe-left)
+    // Gestures iPhone: long-press để sửa/xoá, swipe trái để xoá
     function bindGestures(){ if(gestureBound) return; gestureBound=true; let longPressTimer=null; let startX=0, currentX=0, draggingRow=null;
       function onTouchStart(e){ const row=e.target.closest('.tx'); if(!row) return; draggingRow=row; startX=e.touches[0].clientX; currentX=startX; row.style.transition='none'; longPressTimer=setTimeout(()=>{ clearTimeout(longPressTimer); longPressTimer=null; const id=row.dataset.id; if(!id) return; if(confirm('Sửa giao dịch này? (OK = Sửa, Cancel = Xóa)')){ editOne(id); } else { if(confirm('Xác nhận xóa giao dịch?')) removeOne(id); } },550); }
       function onTouchMove(e){ if(!draggingRow) return; currentX=e.touches[0].clientX; const dx=Math.min(0, currentX-startX); draggingRow.style.transform=`translateX(${dx}px)`; if(Math.abs(dx)>10 && longPressTimer){ clearTimeout(longPressTimer); longPressTimer=null; } }
       function onTouchEnd(){ if(!draggingRow) return; const dx=currentX-startX; draggingRow.style.transition='transform .2s ease'; if(dx<-80){ const id=draggingRow.dataset.id; draggingRow.style.transform='translateX(-120%)'; setTimeout(()=>{ if(id) removeOne(id); },180); } else { draggingRow.style.transform='translateX(0)'; } draggingRow=null; if(longPressTimer){ clearTimeout(longPressTimer); longPressTimer=null; } }
-      document.addEventListener('touchstart', onTouchStart, {passive:true});
-      document.addEventListener('touchmove', onTouchMove, {passive:true});
-      document.addEventListener('touchend', onTouchEnd, {passive:true});
+      document.addEventListener('touchstart', onTouchStart, {passive:true}); document.addEventListener('touchmove', onTouchMove, {passive:true}); document.addEventListener('touchend', onTouchEnd, {passive:true});
     }
 
+    // CRUD
     function removeOne(id){ const data = load().filter(t=>t.id!==id); save(data); render(); }
-
     function editOne(id){ const data=load(); const i=data.findIndex(t=>t.id===id); if(i<0) return; const t=data[i];
       const amount = prompt('Số tiền (đ):', String(t.amount)); if(amount===null) return; const category = prompt('Danh mục:', t.category||''); if(category===null) return;
       const type = prompt('Loại: income hoặc expense', t.type); if(type===null) return; const note = prompt('Ghi chú:', t.note||'');
-      const parsed = Number(String(amount).replace(/\D/g,'')); data[i] = {...t, amount: isNaN(parsed)?t.amount:parsed, category, type: (type==='income'?'income':'expense'), note}; save(data); render(); }
+      const parsed = Number(String(amount).replace(/\D/g,'')); data[i] = {...t, amount: isNaN(parsed)?t.amount:parsed, category, type: (type==='income'?'income':'expense'), note}; save(data); render();
+    }
+    function add(){ const amount=parseAmountField(); const type=$('#type')?$('#type').value:'expense'; const category=$('#category')?($('#category').value||'').trim():''; const note=$('#note')?($('#note').value||'').trim():''; const dateVal=txDateEl?txDateEl.value:''; if(!amount){ alert('Vui lòng nhập số tiền hợp lệ'); return } const createdAt = dateVal ? new Date(dateVal + 'T00:00:00').getTime() : Date.now(); const data = load(); data.unshift({ id: crypto.randomUUID(), amount, type, category, note, createdAt }); save(data); if($('#amount')) $('#amount').value=''; if($('#category')) $('#category').value=''; if($('#note')) $('#note').value=''; render(); }
 
-    function add(){
-      const amount = parseAmountField(); const type=$('#type').value; const category=($('#category').value||'').trim(); const note=($('#note').value||'').trim(); const dateVal=txDateEl.value; if(!amount){ alert('Vui lòng nhập số tiền hợp lệ'); return }
-      const createdAt = dateVal ? new Date(dateVal + 'T00:00:00').getTime() : Date.now();
-      const data = load(); data.unshift({ id: crypto.randomUUID(), amount, type, category, note, createdAt }); save(data);
-      $('#amount').value=''; $('#category').value=''; $('#note').value=''; render();
+    // Toast
+    function showToast(text){ const t=$('#appToast'); if(!t) return; t.textContent=text; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 2200); }
+
+    // Confetti
+    function fireConfetti(level=1){
+      const canvas = document.createElement('canvas');
+      Object.assign(canvas.style,{position:'fixed',inset:'0',pointerEvents:'none',zIndex:9999});
+      document.body.appendChild(canvas);
+      const ctx = canvas.getContext('2d');
+      const resize = ()=>{ canvas.width = innerWidth; canvas.height = innerHeight; };
+      resize();
+      let particles = [];
+      const colors = ['#b3261e','#ff8f00','#43a047','#1e88e5','#8e24aa','#00897b','#fdd835','#5d4037'];
+      const count = 60 + level*20;
+      for(let i=0;i<count;i++){
+        particles.push({x: Math.random()*canvas.width, y: -20 - Math.random()*40, r: 4 + Math.random()*6, c: colors[i%colors.length], vy: 2 + Math.random()*3 + level*0.5, vx: (Math.random()-0.5)*2, a: 1, g: 0.05});
+      }
+      let t=0; const maxT=120;
+      function tick(){
+        t++; ctx.clearRect(0,0,canvas.width,canvas.height);
+        particles.forEach(p=>{ p.vy+=p.g; p.y+=p.vy; p.x+=p.vx; p.a-=0.008; if(p.a<0) p.a=0; ctx.globalAlpha=p.a; ctx.fillStyle=p.c; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();});
+        if(t<maxT){ requestAnimationFrame(tick); } else { canvas.remove(); }
+      }
+      requestAnimationFrame(tick);
+      window.addEventListener('resize', resize, { once:true });
     }
 
-    $('#add').addEventListener('click', add);
-    $('#clearAll').addEventListener('click', ()=>{ if(confirm('Xóa tất cả giao dịch?')){ localStorage.removeItem(STORAGE_KEY); render(); }});
-    $('#clearAll2').addEventListener('click', ()=>{ if(confirm('Xóa tất cả giao dịch?')){ localStorage.removeItem(STORAGE_KEY); render(); }});
-    chartTypeSel.addEventListener('change', ()=>{ updateMascots(Number(sumIncomeEl.textContent.replace(/\D/g,'')), Number(sumExpenseEl.textContent.replace(/\D/g,''))); render(); });
-    chartModeSel.addEventListener('change', ()=>{ updateMascots(Number(sumIncomeEl.textContent.replace(/\D/g,'')), Number(sumExpenseEl.textContent.replace(/\D/g,''))); render(); });
-    filterMonthEl.addEventListener('change', render);
-
-    // CSV theo tháng đang chọn
+    // Export CSV (theo tháng đang chọn)
     $('#exportCSV').addEventListener('click', ()=>{
       const up = load().map(t=>({...t, createdAt: t.createdAt || Date.now()}));
-      const data = applyMonthFilter(up);
-      const rows = [['type','amount','category','note','createdAt'], ...data.map(t=>[t.type,t.amount,(t.category||'').replaceAll(',', ' '),(t.note||'').replaceAll('\n',' ').replaceAll(',', ' '), new Date(t.createdAt).toISOString()])];
+      const v = filterMonthEl.value; const data = v? up.filter(t=> ym(t.createdAt)===v) : up;
+      const rows = [['type','amount','category','note','createdAt'],
+        ...data.map(t=>[t.type,t.amount,(t.category||'').replaceAll(',', ' '),(t.note||'').replaceAll('\n',' ').replaceAll(',', ' '), new Date(t.createdAt).toISOString()])];
       const csv = rows.map(r=>r.join(',')).join('\n');
-      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-      const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='moneymoney.csv'; a.click(); URL.revokeObjectURL(url);
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'}); const url = URL.createObjectURL(blob);
+      const a=document.createElement('a'); a.href=url; a.download='moneymoney.csv'; a.click(); URL.revokeObjectURL(url);
     });
 
-    if('serviceWorker' in navigator){ navigator.serviceWorker.register('service-worker.js').catch(()=>{}); }
+    // Settings UI
+    const modal=$('#settingsModal'); const openBtn=$('#openSettings'); const closeBtn=$('#closeSettings'); const saveBtn=$('#saveSettings');
+    const stTh2=$('#stTh2'), stTh3=$('#stTh3'), stTh4=$('#stTh4'), stBest=$('#stBest');
+    const msgT0=$('#msgT0'), msgT1=$('#msgT1'), msgT2=$('#msgT2'), msgT3=$('#msgT3'), msgT4=$('#msgT4');
+    function populateSettings(){ stTh2.value = SETTINGS.thresholds.t2; stTh3.value = SETTINGS.thresholds.t3; stTh4.value = SETTINGS.thresholds.t4; stBest.value = 'Tier ' + (SETTINGS.bestTier||0); msgT0.value = SETTINGS.messages.t0; msgT1.value = SETTINGS.messages.t1; msgT2.value = SETTINGS.messages.t2; msgT3.value = SETTINGS.messages.t3; msgT4.value = SETTINGS.messages.t4; }
+    function applySettingsFromForm(){ const t2=Math.max(0, Number(stTh2.value||0)); const t3=Math.max(t2, Number(stTh3.value||0)); const t4=Math.max(t3, Number(stTh4.value||0)); SETTINGS.thresholds={t2,t3,t4}; SETTINGS.messages={ t0: msgT0.value, t1: msgT1.value, t2: msgT2.value, t3: msgT3.value, t4: msgT4.value }; saveSettings(SETTINGS); showToast('Đã lưu cài đặt'); if(modal) modal.classList.remove('open'); render(); }
+    if(openBtn){ openBtn.addEventListener('click', ()=>{ populateSettings(); if(modal) modal.classList.add('open'); }); }
+    if(closeBtn){ closeBtn.addEventListener('click', ()=>{ if(modal) modal.classList.remove('open'); }); }
+    if(saveBtn){ saveBtn.addEventListener('click', applySettingsFromForm); }
 
-    (function init(){ const today=new Date(); const yyyy=today.getFullYear(); const mm=String(today.getMonth()+1).padStart(2,'0'); const dd=String(today.getDate()).padStart(2,'0'); $('#txDate').value = `${yyyy}-${mm}-${dd}`; filterMonthEl.value = `${yyyy}-${mm}`; render(); })();
+    // Events
+    function clearAll(){ if(!confirm('Xóa tất cả giao dịch?')) return; try{ localStorage.setItem(STORAGE_KEY,'[]'); }catch(e){ localStorage.removeItem(STORAGE_KEY); } lastTier=0; render(); showToast('Đã xóa tất cả'); }
+    if($('#add')) $('#add').addEventListener('click', add);
+    if($('#clearAll')) $('#clearAll').addEventListener('click', clearAll);
+    if($('#clearAll2')) $('#clearAll2').addEventListener('click', clearAll);
+    if(chartTypeSel) chartTypeSel.addEventListener('change', ()=>{ render(); });
+    if(chartModeSel) chartModeSel.addEventListener('change', ()=>{ render(); });
+    if(filterMonthEl) filterMonthEl.addEventListener('change', render);
+
+    // SW + init
+    if('serviceWorker' in navigator){ navigator.serviceWorker.register('service-worker.js').catch(()=>{}); }
+    (function init(){
+      window.addEventListener('error', (e)=>{ console.error(e); showToast('Lỗi: '+ (e.message||'JS error')); });
+      const today=new Date(); const yyyy=today.getFullYear(); const mm=String(today.getMonth()+1).padStart(2,'0'); const dd=String(today.getDate()).padStart(2,'0');
+      if($('#txDate')) $('#txDate').value = `${yyyy}-${mm}-${dd}`; if(filterMonthEl) filterMonthEl.value = `${yyyy}-${mm}`; render();
+    })();
   </script>
 </body>
 </html>
