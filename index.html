@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Quản Lý Chi Tiêu</title>
+  <meta name="theme-color" content="#2563eb" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
+  <style>
+    :root {
+      --bg: #f7f7fb;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --brand: #2563eb;
+      --danger: #ef4444;
+      --ok: #10b981;
+      --ring: rgba(37, 99, 235, 0.15);
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      color: var(--text);
+      background: var(--bg);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .container { max-width: 720px; margin: 0 auto; padding: env(safe-area-inset-top) 16px calc(16px + env(safe-area-inset-bottom)) 16px; }
+    header { position: sticky; top: 0; z-index: 20; background: var(--bg); padding: 12px 0 8px; backdrop-filter: saturate(180%) blur(10px); }
+    .title { font-size: 22px; font-weight: 800; letter-spacing: -0.2px; display: flex; align-items: center; gap: 8px; }
+    .title .logo { width: 28px; height: 28px; border-radius: 8px; background: var(--brand); color: white; display: grid; place-items: center; font-weight: 900; }
+    .row { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    @media (min-width: 720px) { .row-2 { grid-template-columns: 1fr 1fr; } }
+    .card { background: var(--card); border-radius: 16px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid rgba(2,6,23,0.06); }
+    .card h3 { margin: 0 0 10px; font-size: 16px; }
+    input, select, button, textarea { font: inherit; }
+    .grid { display: grid; gap: 10px; }
+    .grid-2 { grid-template-columns: 1fr 1fr; }
+    .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .field { display: grid; gap: 6px; }
+    .label { font-size: 12px; color: var(--muted); }
+    .control { border: 1px solid rgba(2,6,23,0.08); background: #fff; border-radius: 12px; padding: 10px 12px; outline: none; }
+    .control:focus { border-color: var(--brand); box-shadow: 0 0 0 6px var(--ring); }
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 12px; border: 1px solid transparent; background: var(--brand); color: white; font-weight: 600; cursor: pointer; }
+    .btn.secondary { background: #fff; color: var(--text); border-color: rgba(2,6,23,0.08); }
+    .btn.danger { background: var(--danger); }
+    .summary { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    .pill { display: grid; gap: 4px; background: #fff; border: 1px solid rgba(2,6,23,0.06); border-radius: 14px; padding: 10px; }
+    .pill .v { font-weight: 800; }
+    .list { display: grid; gap: 8px; }
+    .item { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; border-bottom: 1px dashed rgba(2,6,23,0.08); padding: 8px 0; }
+    .cat { font-size: 12px; color: var(--muted); }
+    .amount.minus { color: var(--danger); font-weight: 700; }
+    .amount.plus { color: var(--ok); font-weight: 700; }
+    .legend { display: grid; gap: 6px; grid-template-columns: 1fr 1fr; }
+    .legend .rowl { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+    .muted { color: var(--muted); font-size: 12px; }
+    footer { text-align: center; color: var(--muted); font-size: 12px; padding-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="title">
+        <div class="logo">₫</div> Quản Lý Chi Tiêu
+      </div>
+    </header>
+
+    <div class="row row-2">
+      <section class="card">
+        <h3>Thêm khoản thu/chi</h3>
+        <div class="grid grid-2">
+          <div class="field">
+            <label class="label">Ngày</label>
+            <input id="date" class="control" type="date" value="2025-09-04" />
+          </div>
+          <div class="field">
+            <label class="label">Loại</label>
+            <select id="type" class="control">
+              <option value="chi">Chi</option>
+              <option value="thu">Thu</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="label">Danh mục</label>
+            <input id="category" class="control" list="categories" placeholder="VD: Ăn uống" />
+            <datalist id="categories">
+              <option>Ăn uống</option>
+              <option>Đi lại</option>
+              <option>Giải trí</option>
+              <option>Nhà cửa/Hóa đơn</option>
+              <option>Mua sắm</option>
+              <option>Sức khỏe</option>
+              <option>Giáo dục</option>
+              <option>Tiết kiệm/Đầu tư</option>
+              <option>Khác</option>
+            </datalist>
+          </div>
+          <div class="field">
+            <label class="label">Số tiền (₫)</label>
+            <input id="amount" inputmode="decimal" class="control" type="number" placeholder="0" />
+          </div>
+          <div class="field" style="grid-column: 1 / -1;">
+            <label class="label">Ghi chú</label>
+            <input id="note" class="control" type="text" placeholder="(tuỳ chọn)" />
+          </div>
+          <div class="field" style="grid-column: 1 / -1; display:flex; gap:10px;">
+            <button id="addBtn" class="btn">Thêm</button>
+            <button id="clearBtn" class="btn secondary" title="Xoá tất cả dữ liệu (cẩn thận!)">Xoá tất cả</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h3>Tổng kết tháng</h3>
+        <div class="grid grid-2" style="align-items: end;">
+          <div class="field">
+            <label class="label">Chọn tháng</label>
+            <input id="month" class="control" type="month" />
+          </div>
+          <div class="muted" id="countInfo" style="text-align:right;"></div>
+        </div>
+        <div class="summary" style="margin-top:10px;">
+          <div class="pill">
+            <div class="muted">Tổng Thu</div>
+            <div class="v" id="sumIn">0₫</div>
+          </div>
+          <div class="pill">
+            <div class="muted">Tổng Chi</div>
+            <div class="v" id="sumOut">0₫</div>
+          </div>
+          <div class="pill">
+            <div class="muted">Số Dư</div>
+            <div class="v" id="balance">0₫</div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="row row-2" style="margin-top:12px;">
+      <section class="card">
+        <h3>Danh sách giao dịch</h3>
+        <div class="list" id="list"></div>
+      </section>
+
+      <section class="card">
+        <h3>Biểu đồ chi theo danh mục</h3>
+        <canvas id="pie" width="320" height="320" style="width:100%; height:auto;"></canvas>
+        <div class="legend" id="legend"></div>
+      </section>
+    </div>
+
+    <footer>App PWA chạy offline • Dữ liệu lưu trên thiết bị của bạn</footer>
+  </div>
+
+  <script>
+    // --- Utilities
+    const $ = (sel) => document.querySelector(sel);
+    const formatVND = (n) => (n||0).toLocaleString('vi-VN') + '₫';
+    const today = new Date();
+    $("#month").value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+
+    const STORAGE_KEY = "transactions-v1";
+    const palette = [
+      "#2563eb","#10b981","#f59e0b","#ef4444","#8b5cf6",
+      "#14b8a6","#ec4899","#22c55e","#eab308","#06b6d4"
+    ];
+
+    function load() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
+      catch { return []; }
+    }
+    function save(data) { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+    function addTx(tx) {
+      const all = load();
+      all.push(tx);
+      save(all);
+      render();
+    }
+    function clearAll() {
+      if (confirm("Xoá TẤT CẢ dữ liệu? (Không thể hoàn tác)")) {
+        localStorage.removeItem(STORAGE_KEY);
+        render();
+      }
+    }
+    function delTx(id) {
+      const all = load().filter(x => x.id !== id);
+      save(all);
+      render();
+    }
+
+    function getMonthFilter() {
+      const ym = $("#month").value; // YYYY-MM
+      return load().filter(x => (x.date || "").startsWith(ym));
+    }
+
+    function renderList(items) {
+      const el = $("#list");
+      if (!items.length) { el.innerHTML = '<div class="muted">Chưa có giao dịch.</div>'; return; }
+      el.innerHTML = items.sort((a,b)=> (a.date||"").localeCompare(b.date)).map(x => {
+        const sign = x.type === "chi" ? "-" : "+";
+        const cls = x.type === "chi" ? "minus" : "plus";
+        const note = x.note ? `<div class='muted'>{
+            x.note.replace(/&/g,'&amp;').replace(/</g,'&lt;')
+          }</div>` : "";
+        return `<div class="item">
+          <div class="muted" style="font-variant-numeric: tabular-nums;">${x.date || ""}</div>
+          <div>
+            <div><strong>${x.category || "(không mục)"}</strong></div>
+            ${note}
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div class="amount ${cls}">${sign}${formatVND(x.amount||0)}</div>
+            <button class="btn danger" style="padding:6px 10px;" title="Xoá" onclick="delTx('${x.id}')">X</button>
+          </div>
+        </div>`;
+      }).join("");
+    }
+
+    function sum(items, type) { return items.filter(x=>x.type===type).reduce((s,x)=>s+(Number(x.amount)||0),0); }
+
+    function groupByCategory(items) {
+      const out = new Map();
+      for (const it of items) {
+        const a = Number(it.amount)||0;
+        const key = (it.category || "Khác").trim() || "Khác";
+        out.set(key, (out.get(key)||0) + a);
+      }
+      return Array.from(out.entries()).map(([k,v])=>({category:k, total:v})).sort((a,b)=>b.total-a.total);
+    }
+
+    function drawPie(canvas, data) {
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width, H = canvas.height;
+      ctx.clearRect(0,0,W,H);
+      const cx = W/2, cy = H/2, r = Math.min(W,H)*0.42;
+      const total = data.reduce((s,x)=>s+x.total,0);
+      if (!total) {
+        ctx.fillStyle = "#94a3b8";
+        ctx.textAlign = "center";
+        ctx.font = "14px -apple-system, BlinkMacSystemFont, Segoe UI, Roboto";
+        ctx.fillText("Chưa có dữ liệu chi", cx, cy);
+        return;
+      }
+      let start = -Math.PI/2;
+      data.forEach((d, i)=>{
+        const ang = (d.total/total) * Math.PI*2;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, r, start, start+ang);
+        ctx.closePath();
+        ctx.fillStyle = palette[i % palette.length];
+        ctx.fill();
+        start += ang;
+      });
+      // inner cut (donut)
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.beginPath();
+      ctx.arc(cx, cy, r*0.6, 0, Math.PI*2);
+      ctx.fill();
+      ctx.globalCompositeOperation = "source-over";
+      // center label
+      ctx.fillStyle = "#0f172a";
+      ctx.textAlign = "center";
+      ctx.font = "bold 16px -apple-system, BlinkMacSystemFont, Segoe UI, Roboto";
+      ctx.fillText("Chi tiêu", cx, cy-4);
+      ctx.font = "bold 18px -apple-system, BlinkMacSystemFont, Segoe UI, Roboto";
+      ctx.fillText(formatVND(total), cx, cy+18);
+    }
+
+    function renderPie(items) {
+      const onlyOut = items.filter(x=>x.type==="chi");
+      const grouped = groupByCategory(onlyOut);
+      drawPie($("#pie"), grouped);
+      const leg = $("#legend");
+      if (!grouped.length) { leg.innerHTML = '<div class="muted">Không có dữ liệu.</div>'; return; }
+      leg.innerHTML = grouped.map((d,i)=> `
+        <div class="rowl">
+          <div class="dot" style="background: ${palette[i % palette.length]}"></div>
+          <div>${d.category} — <strong>${formatVND(d.total)}</strong></div>
+        </div>
+      `).join("");
+    }
+
+    function renderSummary(items) {
+      const sIn = sum(items, "thu");
+      const sOut = sum(items, "chi");
+      $("#sumIn").textContent = formatVND(sIn);
+      $("#sumOut").textContent = formatVND(sOut);
+      $("#balance").textContent = formatVND(sIn - sOut);
+      $("#countInfo").textContent = `${items.length} giao dịch`;
+    }
+
+    function render() {
+      const items = getMonthFilter();
+      renderList(items);
+      renderSummary(items);
+      renderPie(items);
+    }
+
+    // --- Init & events
+    $("#addBtn").addEventListener("click", () => {
+      const tx = {
+        id: String(Date.now()) + Math.random().toString(36).slice(2),
+        date: $("#date").value,
+        type: $("#type").value,
+        category: $("#category").value.trim(),
+        amount: Number($("#amount").value || 0),
+        note: $("#note").value.trim()
+      };
+      if (!tx.date) return alert("Chọn ngày");
+      if (!tx.amount || tx.amount <= 0) return alert("Nhập số tiền > 0");
+      addTx(tx);
+      $("#amount").value = "";
+      $("#note").value = "";
+      $("#category").value = "";
+      $("#type").value = "chi";
+      $("#date").focus();
+    });
+    $("#clearBtn").addEventListener("click", clearAll);
+    $("#month").addEventListener("change", render);
+
+    // Register Service Worker (PWA)
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./service-worker.js").catch(()=>{});
+      });
+    }
+
+    render();
+  </script>
+</body>
+</html>
