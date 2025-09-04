@@ -30,7 +30,12 @@
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
-    .container { max-width: 720px; margin: 0 auto; padding: env(safe-area-inset-top) 16px calc(16px + env(safe-area-inset-bottom)) 16px; }
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: env(safe-area-inset-top) 16px calc(16px + env(safe-area-inset-bottom)) 16px;
+      box-sizing: border-box;
+    }
     header { position: sticky; top: 0; z-index: 20; background: var(--bg); padding: 12px 0 8px; backdrop-filter: saturate(180%) blur(10px); }
     .title { font-size: 22px; font-weight: 800; letter-spacing: -0.2px; display: flex; align-items: center; gap: 8px; }
     .title .logo { width: 28px; height: 28px; border-radius: 8px; background: var(--brand); color: white; display: grid; place-items: center; font-weight: 900; }
