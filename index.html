@@ -4,7 +4,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Quản Lý Chi Tiêu</title>
-  <!-- Update theme color to đỏ nâu -->
   <meta name="theme-color" content="#a03d2c" />
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -16,9 +15,9 @@
       --card: #ffffff;
       --text: #3d201a;
       --muted: #8c5d54;
-      --brand: #a03d2c;   /* đỏ nâu */
-      --danger: #d14d32;  /* đỏ đất */
-      --ok: #ad7d53;      /* nâu nhạt */
+      --brand: #a03d2c;
+      --danger: #d14d32;
+      --ok: #ad7d53;
       --ring: rgba(160, 61, 44, 0.15);
     }
     * { box-sizing: border-box; }
@@ -195,7 +194,12 @@
         <h3>Danh sách giao dịch</h3>
         <div class="list" id="list"></div>
       </section>
-      <!-- ĐÃ BỎ KHỐI BIỂU ĐỒ VÀ MASCOT Ở BIỂU ĐỒ -->
+
+      <section class="card">
+        <h3>Biểu đồ chi theo danh mục</h3>
+        <canvas id="pie" width="320" height="320" style="width:100%; height:auto;"></canvas>
+        <div class="legend" id="legend"></div>
+      </section>
     </div>
 
     <footer>App PWA chạy offline • Dữ liệu lưu trên thiết bị của bạn</footer>
@@ -204,41 +208,36 @@
   <script>
     // --- Utilities
     const $ = (sel) => document.querySelector(sel);
-    // Định dạng dấu phẩy khi nhập số lượng tiền & ngăn nhập ký tự không phải số
     const amountInput = $("#amount");
     amountInput.addEventListener("beforeinput", function(e) {
-      // Cho phép xóa/backspace
       if (
         e.inputType === "deleteContentBackward" ||
         e.inputType === "deleteContentForward" ||
         e.inputType === "deleteByCut" ||
         e.inputType === "deleteByDrag"
       ) return;
-      // Cho phép nhập số, ngăn ký tự lạ
       if (!e.data || !/^\d+$/.test(e.data)) e.preventDefault();
     });
     amountInput.addEventListener("input", function(e) {
-      // Lấy tất cả số trong chuỗi nhập vào
       let val = this.value.replace(/[^0-9]/g, '');
       if (!val) {
         this.value = '';
         return;
       }
-      // Giới hạn số chữ số nếu muốn, ví dụ tối đa 12 số
       val = val.slice(0, 12);
-      // Định dạng lại
       const formatted = Number(val).toLocaleString('vi-VN');
       this.value = formatted;
-      // Đặt lại vị trí con trỏ ở cuối (tránh bị nhảy về đầu)
       this.setSelectionRange(this.value.length, this.value.length);
     });
-    // Format VND cho mọi nơi hiển thị
     const formatVND = (n) => (n||0).toLocaleString('vi-VN') + '₫';
     const today = new Date();
     $("#month").value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
 
     const STORAGE_KEY = "transactions-v1";
-    // palette cũ có thể giữ nguyên cho biểu đồ, nhưng đã ẩn phần biểu đồ ở trên
+    const palette = [
+      "#a03d2c","#d14d32","#ad7d53","#8c5d54","#c97554",
+      "#d2907c","#c98c6d","#af4422","#b35c44","#bc7156"
+    ];
     function escapeHTML(str) {
       if (!str) return '';
       return str.replace(/&/g, '&amp;')
@@ -299,6 +298,69 @@
 
     function sum(items, type) { return items.filter(x=>x.type===type).reduce((s,x)=>s+(Number(x.amount)||0),0); }
 
+    function groupByCategory(items) {
+      const out = new Map();
+      for (const it of items) {
+        const a = Number(it.amount)||0;
+        const key = (it.category || "Khác").trim() || "Khác";
+        out.set(key, (out.get(key)||0) + a);
+      }
+      return Array.from(out.entries()).map(([k,v])=>({category:k, total:v})).sort((a,b)=>b.total-a.total);
+    }
+
+    function drawPie(canvas, data) {
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width, H = canvas.height;
+      ctx.clearRect(0,0,W,H);
+      const cx = W/2, cy = H/2, r = Math.min(W,H)*0.42;
+      const total = data.reduce((s,x)=>s+x.total,0);
+      if (!total) {
+        ctx.fillStyle = "#bfa09c";
+        ctx.textAlign = "center";
+        ctx.font = "14px -apple-system, BlinkMacSystemFont, Segoe UI, Roboto";
+        ctx.fillText("Chưa có dữ liệu chi", cx, cy);
+        return;
+      }
+      let start = -Math.PI/2;
+      data.forEach((d, i)=>{
+        const ang = (d.total/total) * Math.PI*2;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, r, start, start+ang);
+        ctx.closePath();
+        ctx.fillStyle = palette[i % palette.length];
+        ctx.fill();
+        start += ang;
+      });
+      // inner cut (donut)
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.beginPath();
+      ctx.arc(cx, cy, r*0.6, 0, Math.PI*2);
+      ctx.fill();
+      ctx.globalCompositeOperation = "source-over";
+      // center label
+      ctx.fillStyle = "#3d201a";
+      ctx.textAlign = "center";
+      ctx.font = "bold 16px -apple-system, BlinkMacSystemFont, Segoe UI, Roboto";
+      ctx.fillText("Chi tiêu", cx, cy-4);
+      ctx.font = "bold 18px -apple-system, BlinkMacSystemFont, Segoe UI, Roboto";
+      ctx.fillText(formatVND(total), cx, cy+18);
+    }
+
+    function renderPie(items) {
+      const onlyOut = items.filter(x=>x.type==="chi");
+      const grouped = groupByCategory(onlyOut);
+      drawPie($("#pie"), grouped);
+      const leg = $("#legend");
+      if (!grouped.length) { leg.innerHTML = '<div class="muted">Không có dữ liệu.</div>'; return; }
+      leg.innerHTML = grouped.map((d,i)=> `
+        <div class="rowl">
+          <div class="dot" style="background: ${palette[i % palette.length]}"></div>
+          <div>${d.category} — <strong>${formatVND(d.total)}</strong></div>
+        </div>
+      `).join("");
+    }
+
     function renderSummary(items) {
       const sIn = sum(items, "thu");
       const sOut = sum(items, "chi");
@@ -308,7 +370,6 @@
       $("#balance").textContent = formatVND(balance);
       $("#countInfo").textContent = `${items.length} giao dịch`;
 
-      // Đổi ảnh mascot theo số dư
       const mascotImg = $("#mascotBalance");
       if (mascotImg) {
         if (balance > 0) {
@@ -331,17 +392,15 @@
       const items = getMonthFilter();
       renderList(items);
       renderSummary(items);
+      renderPie(items);
     }
 
-    // --- Init & events
     $("#addBtn").addEventListener("click", () => {
       const tx = {
         id: String(Date.now()) + Math.random().toString(36).slice(2),
-        // Nếu không chọn ngày, sẽ tự động lấy ngày hôm nay
         date: $("#date").value || new Date().toISOString().slice(0,10),
         type: $("#type").value,
         category: $("#category").value.trim(),
-        // Lấy giá trị số, bỏ dấu phẩy, nếu rỗng là 0
         amount: Number($("#amount").value.replace(/[^0-9]/g, "") || 0),
         note: $("#note").value.trim()
       };
@@ -351,12 +410,10 @@
       $("#note").value = "";
       $("#category").value = "";
       $("#type").value = "chi";
-      //$("#amount").focus(); // focus lại vào ô nhập tiền
     });
     $("#clearBtn").addEventListener("click", clearAll);
     $("#month").addEventListener("change", render);
 
-    // Mascot đổi ảnh theo loại giao dịch thu/chi
     $("#type").addEventListener("change", function() {
       const v = this.value;
       $("#mascotTxType").src = v === "chi"
@@ -365,7 +422,6 @@
       $("#mascotTxType").alt = v === "chi" ? "Cọp chi tiền" : "Cọp nhận tiền";
     });
 
-    // Register Service Worker (PWA)
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
         navigator.serviceWorker.register("./service-worker.js").catch(()=>{});
