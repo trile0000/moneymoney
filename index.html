@@ -703,6 +703,7 @@
             <select id="chartMode" class="btn ghost">
               <option value="byCategory">Theo danh mục (Chi)</option>
               <option value="totals">Tổng Thu vs Chi</option>
+              <option value="trend">Biến động</option>
             </select>
             <select id="chartType" class="btn ghost">
               <option value="doughnut">Donut</option>
@@ -731,6 +732,12 @@
     <div class="panel">
       <header>Cài đặt</header>
       <div class="content">
+        <div class="form-group"><label>Lương hàng tháng (đ)</label><input id="stSalary" type="number" min="0" step="100000" placeholder="0" /></div>
+        <div class="form-group"><label>Danh mục lương</label><input id="stSalaryCategory" type="text" placeholder="VD: Lương cơ bản" value="Lương" /></div>
+        <div style="padding: 10px; background: #fff8e1; border-radius: 8px; border: 1px solid #ffe0b2; font-size: 13px; color: #6d4c41; margin-bottom: 10px;">
+          💡 Nếu lương > 0, hệ thống sẽ tự động thêm vào ngày 1 đầu tháng (nếu chưa có)
+        </div>
+        <hr style="border: none; border-top: 1px solid var(--ring); margin: 16px 0;">
         <div class="grid-2">
           <div class="form-group"><label>Ngưỡng Tier 2 (Dư dả) — ≥ đ</label><input id="stTh2" type="number" min="0" step="1000" placeholder="5000000" /></div>
           <div class="form-group"><label>Ngưỡng Tier 3 (Siêu khá) — ≥ đ</label><input id="stTh3" type="number" min="0" step="1000" placeholder="10000000" /></div>
@@ -739,7 +746,7 @@
         </div>
         <div class="form-group"><label>Thông điệp Tier 0 (Âm)</label><input id="msgT0" type="text" placeholder="😿 Âm ({sign}{amount}). Thử cắt giảm vài khoản không cần thiết nhé!" /></div>
         <div class="form-group"><label>Thông điệp Tier 1 (Dư nhẹ)</label><input id="msgT1" type="text" placeholder="🙂 Dư nhẹ ({sign}{amount}). Đặt thêm mục tiêu tiết kiệm nhé!" /></div>
-        <div class="form-group"><label>Thông điệp Tier 2 (Dư dả)</label><input id="msgT2" type="text" placeholder="🤑 Dư d�� ({sign}{amount})! Tiếp tục tiết kiệm thông minh!" /></div>
+        <div class="form-group"><label>Thông điệp Tier 2 (Dư dả)</label><input id="msgT2" type="text" placeholder="🤑 Dư dả ({sign}{amount})! Tiếp tục tiết kiệm thông minh!" /></div>
         <div class="form-group"><label>Thông điệp Tier 3 (Siêu khá)</label><input id="msgT3" type="text" placeholder="🚀 Siêu khá ({sign}{amount})! Xịn quá, duy trì đà này!" /></div>
         <div class="form-group"><label>Thông điệp Tier 4 (Đại gia)</label><input id="msgT4" type="text" placeholder="👑 Đại gia ({sign}{amount})! Đặt mục tiêu đầu tư dài hạn nhé!" /></div>
       </div>
@@ -782,6 +789,8 @@
     // Settings
     function loadSettings(){
       const defaults = {
+        salary: 0,
+        salaryCategory: 'Lương',
         thresholds: { t2: 5000000, t3: 10000000, t4: 20000000 },
         messages: {
           t0: '😿 Âm ({sign}{amount}). Thử cắt giảm vài khoản không cần thiết nhé!',
@@ -857,6 +866,32 @@
       lastTier = tier;
     }
 
+    // Auto-add salary at beginning of month
+    function autoAddSalary(){
+      if(!SETTINGS.salary || SETTINGS.salary <= 0) return;
+      const today = new Date();
+      if(today.getDate() !== 1) return;
+      
+      const data = load();
+      const thisMonth = ym(Date.now());
+      const alreadyHasSalary = data.some(t => t.type==='income' && ym(t.createdAt||Date.now())===thisMonth && (t.category||'').toLowerCase().includes('lương'));
+      
+      if(!alreadyHasSalary){
+        const newId = Date.now().toString();
+        data.push({
+          id: newId,
+          type: 'income',
+          amount: SETTINGS.salary,
+          category: SETTINGS.salaryCategory || 'Lương',
+          note: 'Tự động thêm từ hệ thống',
+          createdAt: Date.now()
+        });
+        save(data);
+        showToast('💰 Đã tự động thêm lương hàng tháng!');
+        render();
+      }
+    }
+
     // Render
     function render(){
       const up = load().map(t=>({...t, createdAt: t.createdAt || Date.now()})); save(up);
@@ -886,21 +921,52 @@
       const type = (chartTypeSel && chartTypeSel.value) || 'doughnut';
       const mode = (chartModeSel && chartModeSel.value) || 'byCategory';
       let labels=[], values=[], legendText='';
-      if(mode==='totals'){ labels=['Thu','Chi']; values=[income, expense]; legendText='Tổng hợp thu/chi'; }
-      else { const map=new Map(); for(const t of data){ if(t.type!=='expense') continue; const k=t.category||'Khác'; map.set(k,(map.get(k)||0)+(+t.amount||0)); } labels=[...map.keys()]; values=[...map.values()]; legendText='Chi theo danh mục'; }
-      const total = values.reduce((a,b)=>a+b,0);
-      if(values.length===0 || total===0){ labels=['Không có dữ liệu']; values=[0.0001]; }
-      const colors = palette(values.length||2);
-      const dataset = { label: legendText, data: values, backgroundColor: (type==='doughnut' || type==='bar')? colors: undefined, borderColor: type==='line'? colors: undefined, fill: type==='line'? false: undefined, tension: 0.4 };
-      chart = new Chart(chartEl,{ type, data:{labels, datasets:[dataset]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:type==='doughnut'?'bottom':'top' } }, scales: type!=='doughnut'? {y:{beginAtZero:true}} : undefined } });
+      
+      if(mode==='trend'){
+        // Biến động theo tháng
+        const allData = load().map(t=>({...t, createdAt: t.createdAt || Date.now()}));
+        const monthMap = new Map();
+        for(const t of allData){
+          const m = ym(t.createdAt);
+          if(!monthMap.has(m)) monthMap.set(m, {income: 0, expense: 0});
+          const curr = monthMap.get(m);
+          if(t.type==='income') curr.income += +t.amount||0;
+          else curr.expense += +t.amount||0;
+        }
+        const sortedMonths = Array.from(monthMap.keys()).sort();
+        labels = sortedMonths.map(m => {
+          const [y, mo] = m.split('-');
+          return `T${mo}/${y}`;
+        });
+        const incomeVals = sortedMonths.map(m => monthMap.get(m).income);
+        const expenseVals = sortedMonths.map(m => monthMap.get(m).expense);
+        const dataset1 = { label: 'Thu nhập', data: incomeVals, borderColor: '#2e7d32', backgroundColor: type==='doughnut'?'#2e7d32':undefined, fill: type==='line'?false:undefined, tension: 0.3 };
+        const dataset2 = { label: 'Chi tiêu', data: expenseVals, borderColor: '#b3261e', backgroundColor: type==='doughnut'?'#b3261e':undefined, fill: type==='line'?false:undefined, tension: 0.3 };
+        chart = new Chart(chartEl,{ type, data:{labels, datasets:[dataset1, dataset2]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'top' } }, scales: type==='line'||type==='bar'? {y:{beginAtZero:true}}: undefined } });
+        legendText = 'Biến động thu/chi theo tháng';
+      }
+      else if(mode==='totals'){ 
+        labels=['Thu','Chi']; values=[income, expense]; legendText='Tổng hợp thu/chi';
+        const colors = palette(values.length||2);
+        const dataset = { label: legendText, data: values, backgroundColor: (type==='doughnut' || type==='bar')? colors: undefined, borderColor: type==='line'? colors: undefined, fill: type==='line'? false: undefined, tension: 0.3 };
+        chart = new Chart(chartEl,{ type, data:{labels, datasets:[dataset]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:type==='doughnut'?'bottom':'top' } }, scales: type==='line'||type==='bar'? {y:{beginAtZero:true}}: undefined } });
+      }
+      else { 
+        const map=new Map(); for(const t of data){ if(t.type!=='expense') continue; const k=t.category||'Khác'; map.set(k,(map.get(k)||0)+(+t.amount||0)); } labels=[...map.keys()]; values=[...map.values()]; legendText='Chi tiêu theo danh mục';
+        const total = values.reduce((a,b)=>a+b,0);
+        if(values.length===0 || total===0){ labels=['Không có dữ liệu']; values=[0.0001]; }
+        const colors = palette(values.length||2);
+        const dataset = { label: legendText, data: values, backgroundColor: (type==='doughnut' || type==='bar')? colors: undefined, borderColor: type==='line'? colors: undefined, fill: type==='line'? false: undefined, tension: 0.3 };
+        chart = new Chart(chartEl,{ type, data:{labels, datasets:[dataset]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:type==='doughnut'?'bottom':'top' } }, scales: type==='line'||type==='bar'? {y:{beginAtZero:true}}: undefined } });
+      }
       if(chartLegend) chartLegend.textContent = legendText;
     }
 
     // Gestures iPhone: long-press để sửa/xoá, swipe trái để xoá
     function bindGestures(){ if(gestureBound) return; gestureBound=true; let longPressTimer=null; let startX=0, currentX=0, draggingRow=null;
-      function onTouchStart(e){ const row=e.target.closest('.tx'); if(!row) return; draggingRow=row; startX=e.touches[0].clientX; currentX=startX; row.style.transition='none'; longPressTimer=setTimeout(()=>{ longPressTimer=null; editOne(row.dataset.id); }, 600); }
-      function onTouchMove(e){ if(!draggingRow) return; currentX=e.touches[0].clientX; const dx=Math.min(0, currentX-startX); draggingRow.style.transform=`translateX(${dx}px)`; if(Math.abs(dx)>10 && longPressTimer){ clearTimeout(longPressTimer); longPressTimer=null; } }
-      function onTouchEnd(){ if(!draggingRow) return; const dx=currentX-startX; draggingRow.style.transition='transform .2s ease'; if(dx<-80){ const id=draggingRow.dataset.id; draggingRow.style.transform='translateX(-100%)'; setTimeout(()=>removeOne(id), 200); } else { draggingRow.style.transform='translateX(0)'; } if(longPressTimer){ clearTimeout(longPressTimer); longPressTimer=null; } draggingRow=null; }
+      function onTouchStart(e){ const row=e.target.closest('.tx'); if(!row) return; draggingRow=row; startX=e.touches[0].clientX; currentX=startX; row.style.transition='none'; longPressTimer=setTimeout(()=>{ const id=draggingRow.dataset.id; editOne(id); }, 500); }
+      function onTouchMove(e){ if(!draggingRow) return; currentX=e.touches[0].clientX; const dx=Math.min(0, currentX-startX); draggingRow.style.transform=`translateX(${dx}px)`; if(Math.abs(dx)>10) clearTimeout(longPressTimer); }
+      function onTouchEnd(){ if(!draggingRow) return; const dx=currentX-startX; draggingRow.style.transition='transform .2s ease'; if(dx<-80){ const id=draggingRow.dataset.id; draggingRow.style.transform='translateX(-100%)'; setTimeout(()=>removeOne(id), 200); } else { draggingRow.style.transform='translateX(0)'; } clearTimeout(longPressTimer); draggingRow=null; }
       document.addEventListener('touchstart', onTouchStart, {passive:true}); document.addEventListener('touchmove', onTouchMove, {passive:true}); document.addEventListener('touchend', onTouchEnd, {passive:true});
     }
 
@@ -911,7 +977,7 @@
       const type = prompt('Loại: income hoặc expense', t.type); if(type===null) return; const note = prompt('Ghi chú:', t.note||'');
       const parsed = Number(String(amount).replace(/\D/g,'')); data[i] = {...t, amount: isNaN(parsed)?t.amount:parsed, category, type: (type==='income'?'income':'expense'), note}; save(data); render();
     }
-    function add(){ const amount=parseAmountField(); const type=$('#type')?$('#type').value:'expense'; const category=$('#category')?($('#category').value||'').trim():''; const note=$('#note')?($('#note').value||'').trim():''; if(!amount){ alert('Nhập số tiền!'); return; } const t={id: Date.now()+'_'+Math.random(), type, amount, category, note, createdAt: new Date($('#txDate').value||new Date()).getTime()}; const data=load(); data.unshift(t); save(data); $('#amount').value=''; $('#category').value=''; $('#note').value=''; showToast('Đã thêm giao dịch'); render(); }
+    function add(){ const amount=parseAmountField(); const type=$('#type')?$('#type').value:'expense'; const category=$('#category')?($('#category').value||'').trim():''; const note=$('#note')?($('#note').value||'').trim():''; const createdAt=txDateEl? new Date(txDateEl.value).getTime(): Date.now(); const id=Date.now().toString(); const data=load(); data.push({id,type,amount,category,note,createdAt}); save(data); if(amountInput)amountInput.value=''; if($('#category'))$('#category').value=''; if($('#note'))$('#note').value=''; render(); }
 
     // Toast
     function showToast(text){ const t=$('#appToast'); if(!t) return; t.textContent=text; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 3000); }
@@ -928,12 +994,12 @@
       const colors = ['#b3261e','#ff8f00','#43a047','#1e88e5','#8e24aa','#00897b','#fdd835','#5d4037'];
       const count = 60 + level*20;
       for(let i=0;i<count;i++){
-        particles.push({x: Math.random()*canvas.width, y: -20 - Math.random()*40, r: 4 + Math.random()*6, c: colors[i%colors.length], vy: 2 + Math.random()*3 + level*0.5, vx: (Math.random()-0.5)*2, a: 1, g: 0.15});
+        particles.push({x: Math.random()*canvas.width, y: -20 - Math.random()*40, r: 4 + Math.random()*6, c: colors[i%colors.length], vy: 2 + Math.random()*3 + level*0.5, vx: (Math.random()-0.5)*6, g: 0.15, a: 1});
       }
       let t=0; const maxT=120;
       function tick(){
         t++; ctx.clearRect(0,0,canvas.width,canvas.height);
-        particles.forEach(p=>{ p.vy+=p.g; p.y+=p.vy; p.x+=p.vx; p.a-=0.008; if(p.a<0) p.a=0; ctx.globalAlpha=p.a; ctx.fillStyle=p.c; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();});
+        particles.forEach(p=>{ p.vy+=p.g; p.y+=p.vy; p.x+=p.vx; p.a-=0.008; if(p.a<0) p.a=0; ctx.globalAlpha=p.a; ctx.fillStyle=p.c; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill(); });
         if(t<maxT){ requestAnimationFrame(tick); } else { canvas.remove(); }
       }
       requestAnimationFrame(tick);
@@ -953,16 +1019,30 @@
 
     // Settings UI
     const modal=$('#settingsModal'); const openBtn=$('#openSettings'); const closeBtn=$('#closeSettings'); const saveBtn=$('#saveSettings');
+    const stSalary=$('#stSalary'), stSalaryCategory=$('#stSalaryCategory');
     const stTh2=$('#stTh2'), stTh3=$('#stTh3'), stTh4=$('#stTh4'), stBest=$('#stBest');
     const msgT0=$('#msgT0'), msgT1=$('#msgT1'), msgT2=$('#msgT2'), msgT3=$('#msgT3'), msgT4=$('#msgT4');
-    function populateSettings(){ stTh2.value = SETTINGS.thresholds.t2; stTh3.value = SETTINGS.thresholds.t3; stTh4.value = SETTINGS.thresholds.t4; stBest.value = 'Tier ' + (SETTINGS.bestTier||0); msgT0.value = SETTINGS.messages.t0; msgT1.value = SETTINGS.messages.t1; msgT2.value = SETTINGS.messages.t2; msgT3.value = SETTINGS.messages.t3; msgT4.value = SETTINGS.messages.t4; }
-    function applySettingsFromForm(){ const t2=Math.max(0, Number(stTh2.value||0)); const t3=Math.max(t2, Number(stTh3.value||0)); const t4=Math.max(t3, Number(stTh4.value||0)); SETTINGS.thresholds={t2, t3, t4}; SETTINGS.messages={t0: msgT0.value||SETTINGS.messages.t0, t1: msgT1.value||SETTINGS.messages.t1, t2: msgT2.value||SETTINGS.messages.t2, t3: msgT3.value||SETTINGS.messages.t3, t4: msgT4.value||SETTINGS.messages.t4}; saveSettings(SETTINGS); modal.classList.remove('open'); showToast('Đã lưu cài đặt'); render(); }
+    function populateSettings(){ 
+      stSalary.value = SETTINGS.salary || 0;
+      stSalaryCategory.value = SETTINGS.salaryCategory || 'Lương';
+      stTh2.value = SETTINGS.thresholds.t2; stTh3.value = SETTINGS.thresholds.t3; stTh4.value = SETTINGS.thresholds.t4; stBest.value = 'Tier ' + (SETTINGS.bestTier||0);
+      msgT0.value = SETTINGS.messages.t0; msgT1.value = SETTINGS.messages.t1; msgT2.value = SETTINGS.messages.t2; msgT3.value = SETTINGS.messages.t3; msgT4.value = SETTINGS.messages.t4;
+    }
+    function applySettingsFromForm(){ 
+      const salary = Math.max(0, Number(stSalary.value||0));
+      const salaryCategory = (stSalaryCategory.value||'Lương').trim();
+      const t2=Math.max(0, Number(stTh2.value||0)); const t3=Math.max(t2, Number(stTh3.value||0)); const t4=Math.max(t3, Number(stTh4.value||0)); SETTINGS.thresholds={t2,t3,t4};
+      SETTINGS.messages={t0:msgT0.value,t1:msgT1.value,t2:msgT2.value,t3:msgT3.value,t4:msgT4.value};
+      SETTINGS.salary = salary;
+      SETTINGS.salaryCategory = salaryCategory;
+      saveSettings(SETTINGS); render(); if(modal) modal.classList.remove('open'); showToast('✅ Đã lưu cài đặt');
+    }
     if(openBtn){ openBtn.addEventListener('click', ()=>{ populateSettings(); if(modal) modal.classList.add('open'); }); }
     if(closeBtn){ closeBtn.addEventListener('click', ()=>{ if(modal) modal.classList.remove('open'); }); }
     if(saveBtn){ saveBtn.addEventListener('click', applySettingsFromForm); }
 
     // Events
-    function clearAll(){ if(!confirm('Xóa tất cả giao dịch?')) return; try{ localStorage.setItem(STORAGE_KEY,'[]'); }catch(e){ localStorage.removeItem(STORAGE_KEY); } lastTier=0; render(); showToast('Đã xóa tất cả dữ liệu'); }
+    function clearAll(){ if(!confirm('Xóa tất cả giao dịch?')) return; try{ localStorage.setItem(STORAGE_KEY,'[]'); }catch(e){ localStorage.removeItem(STORAGE_KEY); } lastTier=0; render(); }
     if($('#add')) $('#add').addEventListener('click', add);
     if($('#clearAll')) $('#clearAll').addEventListener('click', clearAll);
     if($('#clearAll2')) $('#clearAll2').addEventListener('click', clearAll);
@@ -975,7 +1055,9 @@
     (function init(){
       window.addEventListener('error', (e)=>{ console.error(e); showToast('Lỗi: '+ (e.message||'JS error')); });
       const today=new Date(); const yyyy=today.getFullYear(); const mm=String(today.getMonth()+1).padStart(2,'0'); const dd=String(today.getDate()).padStart(2,'0');
-      if($('#txDate')) $('#txDate').value = `${yyyy}-${mm}-${dd}`; if(filterMonthEl) filterMonthEl.value = `${yyyy}-${mm}`; render();
+      if($('#txDate')) $('#txDate').value = `${yyyy}-${mm}-${dd}`; if(filterMonthEl) filterMonthEl.value = `${yyyy}-${mm}`; 
+      autoAddSalary();
+      render();
     })();
   </script>
 </body>
