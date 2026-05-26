@@ -16,73 +16,597 @@
 
   <style>
     :root{
-      --primary:#8B2E1A; --primary-600:#7A2A1A; --primary-700:#662316; --primary-50:#F7E9E6;
-      --bg:#f6f4f3; --surface:#ffffff; --text:#231815; --muted:#8a7975; --danger:#b3261e; --ok:#2e7d32; --ring:#e9d2cd;
-      --radius:18px; --shadow:0 10px 30px rgba(139,46,26,.08);
+      --primary:#8B2E1A;
+      --primary-600:#7A2A1A;
+      --primary-700:#662316;
+      --primary-50:#F7E9E6;
+      --bg:#f6f4f3;
+      --surface:#ffffff;
+      --text:#231815;
+      --text-secondary:#5a524d;
+      --muted:#8a7975;
+      --danger:#b3261e;
+      --ok:#2e7d32;
+      --ring:#e9d2cd;
+      --radius:18px;
+      --shadow:0 10px 30px rgba(139,46,26,.08);
+      --shadow-sm:0 4px 12px rgba(139,46,26,.05);
     }
-    *{box-sizing:border-box}
-    body{
-      margin:0; font-family:'Baloo 2','Quicksand',ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    
+    * { box-sizing: border-box; }
+    
+    body {
+      margin: 0;
+      font-family: 'Baloo 2', 'Quicksand', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
       background: radial-gradient(1200px 600px at 10% -10%, var(--primary-50), transparent), var(--bg);
-      color:var(--text);
+      color: var(--text);
       padding-top: calc(env(safe-area-inset-top) + 0px);
-      padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+      line-height: 1.5;
     }
-    .container{max-width:1160px; padding:24px; margin:0 auto}
-    header{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px}
-    .title{display:flex; align-items:center; gap:10px}
-    .logo{width:36px; height:36px; border-radius:10px; background:#fff url('assets/mascot/tiger_logo.png') center/cover no-repeat; box-shadow:var(--shadow)}
-    h1{font-size:24px; margin:0}
-    .actions{display:flex; flex-wrap:wrap; gap:10px}
-    .btn{appearance:none; border:none; cursor:pointer; padding:12px 14px; border-radius:14px; font-weight:700}
-    .btn.primary{background:var(--primary); color:#fff}
-    .btn.ghost{background:#fff; color:var(--primary-700); border:1px solid var(--ring)}
-    .btn.danger{background:var(--danger); color:#fff}
-    .grid{ display:grid; gap:16px; grid-template-columns: 1fr; grid-auto-rows:minmax(180px,auto); }
-    @media (min-width: 980px){ .grid{ grid-template-columns: 1.1fr 1fr; } }
-    .card{background:var(--surface); border:1px solid var(--ring); border-radius:var(--radius); box-shadow:var(--shadow)}
-    .card .card-body{padding:18px}
-    .card h2{font-size:18px; margin:0 0 12px;}
-    .form-grid{display:grid; gap:12px}
-    @media (min-width:480px){ .form-grid{grid-template-columns: 1fr 1fr} }
-    label{font-size:13px; color:var(--muted)}
-    input, select, textarea{ width:100%; padding:12px 14px; border-radius:12px; border:1px solid var(--ring); outline:none; background:#fff; font-size:16px; }
-    .kpis{display:grid; grid-template-columns: repeat(3,1fr); gap:10px}
-    .kpi{background:#fff; border:1px solid var(--ring); border-radius:14px; padding:12px; text-align:center}
-    .kpi h4{margin:0 0 4px; font-size:12px; color:var(--muted)}
-    .kpi .val{font-weight:800; font-size:20px}
-    .list{display:flex; flex-direction:column; gap:10px}
-    .tx{display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:10px; padding:12px; background:#fff; border:1px solid var(--ring); border-radius:14px; touch-action: pan-y}
-    .tx .date{font-size:12px; color:var(--muted)}
-    .tx .cat{font-weight:700}
-    .amt{font-weight:800}
-    .amt.out{color:var(--danger)}
-    .amt.in{color:var(--ok)}
-    .chart-controls{display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px}
-    .chart-box{height:320px; position:relative; width:100%}
-    .chart-box canvas{position:absolute; inset:0; width:100%; height:100%}
-    .mascot-center{ text-align:center; margin:16px 0; }
-    .mascot-center img{ width:100px; height:100px; object-fit:contain; image-rendering:auto }
-    /* Status bar theo số dư */
-    .status-bar{ display:flex; align-items:center; justify-content:center; gap:8px; padding:10px 12px; border:1px solid var(--ring); border-radius:12px; font-weight:700; }
-    .status--rich{ background:#e8f5e9; border-color:#c8e6c9; color:#1b5e20; }
-    .status--neutral{ background:#fff8e1; border-color:#ffe0b2; color:#6d4c41; }
-    .status--poor{ background:#fdecea; border-color:#f5c6c3; color:#b3261e; }
-    /* Mascot animation */
-    @keyframes pop { 0%{ transform:scale(.9) rotate(0deg)} 50%{ transform:scale(1.08) rotate(-2deg)} 100%{ transform:scale(1) rotate(0)} }
-    .mascot-animate{ animation: pop .6s ease; }
-    /* Modal settings */
-    .modal{ position:fixed; inset:0; background:rgba(0,0,0,.28); display:none; align-items:center; justify-content:center; z-index:10000; padding:20px }
-    .modal.open{ display:flex }
-    .modal .panel{ width:min(640px,100%); background:#fff; border:1px solid var(--ring); border-radius:16px; box-shadow:var(--shadow); overflow:hidden }
-    .modal header{ padding:14px 16px; border-bottom:1px solid var(--ring) }
-    .modal .content{ padding:16px; display:grid; gap:12px }
-    .grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:12px }
-    @media (max-width:520px){ .grid-2{ grid-template-columns:1fr } }
-    .modal .actions{ padding:12px 16px; border-top:1px solid var(--ring); display:flex; justify-content:flex-end; gap:10px }
+    
+    .container {
+      max-width: 1280px;
+      padding: 16px;
+      margin: 0 auto;
+    }
+    
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    
+    .title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+      min-width: 200px;
+    }
+    
+    .logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: #fff url('assets/mascot/tiger_logo.png') center/cover no-repeat;
+      box-shadow: var(--shadow-sm);
+      flex-shrink: 0;
+    }
+    
+    h1 {
+      font-size: 28px;
+      margin: 0;
+      font-weight: 700;
+    }
+    
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    
+    /* Buttons */
+    .btn {
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 14px;
+      transition: all .2s ease;
+      white-space: nowrap;
+    }
+    
+    .btn:active {
+      transform: scale(0.98);
+    }
+    
+    .btn.primary {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .btn.primary:hover {
+      background: var(--primary-600);
+    }
+    
+    .btn.ghost {
+      background: #fff;
+      color: var(--primary-700);
+      border: 1px solid var(--ring);
+    }
+    
+    .btn.ghost:hover {
+      background: var(--primary-50);
+    }
+    
+    .btn.danger {
+      background: var(--danger);
+      color: #fff;
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .btn.danger:hover {
+      background: #a01d1a;
+    }
+    
+    .btn.danger-text {
+      background: transparent;
+      color: var(--danger);
+      border: none;
+      padding: 8px;
+      min-width: 44px;
+      min-height: 44px;
+      font-size: 16px;
+    }
+    
+    /* Grid Layout */
+    .grid {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: 1fr;
+      grid-auto-rows: auto;
+    }
+    
+    @media (min-width: 768px) {
+      .grid {
+        grid-template-columns: 1.2fr 1fr;
+      }
+    }
+    
+    @media (min-width: 1200px) {
+      .grid {
+        grid-template-columns: 1.2fr 1fr 1fr;
+      }
+    }
+    
+    /* Cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--ring);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    
+    .card-body {
+      padding: 20px;
+    }
+    
+    .card h2 {
+      font-size: 20px;
+      margin: 0 0 16px;
+      color: var(--text);
+      font-weight: 700;
+    }
+    
+    /* Form Grid */
+    .form-grid {
+      display: grid;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    
+    @media (min-width: 480px) {
+      .form-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    
+    label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      display: block;
+    }
+    
+    input, select, textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--ring);
+      outline: none;
+      background: #fff;
+      font-size: 16px;
+      font-family: inherit;
+      color: var(--text);
+      transition: border-color .2s, box-shadow .2s;
+    }
+    
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(139, 46, 26, 0.1);
+    }
+    
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    
+    /* KPI Cards */
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 16px 0;
+    }
+    
+    .kpi {
+      background: #fff;
+      border: 1px solid var(--ring);
+      border-radius: 12px;
+      padding: 14px;
+      text-align: center;
+    }
+    
+    .kpi h4 {
+      margin: 0 0 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .kpi .val {
+      font-weight: 800;
+      font-size: 18px;
+      color: var(--text);
+      word-break: break-word;
+    }
+    
+    /* Transaction List */
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .tx {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 14px;
+      background: #fff;
+      border: 1px solid var(--ring);
+      border-radius: 12px;
+      touch-action: pan-y;
+      transition: background .2s, box-shadow .2s;
+    }
+    
+    .tx:hover {
+      background: var(--primary-50);
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .tx-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      overflow: hidden;
+    }
+    
+    .tx .date {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    
+    .tx .cat {
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .amt {
+      font-weight: 800;
+      font-size: 16px;
+      text-align: right;
+      white-space: nowrap;
+    }
+    
+    .amt.out {
+      color: var(--danger);
+    }
+    
+    .amt.in {
+      color: var(--ok);
+    }
+    
+    .tx-delete {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      margin-left: 8px;
+    }
+    
+    /* Empty State */
+    .empty-state {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 32px 16px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 14px;
+    }
+    
+    /* Chart Controls */
+    .chart-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+      align-items: center;
+    }
+    
+    .chart-controls label {
+      margin: 0;
+      white-space: nowrap;
+    }
+    
+    .chart-controls input[type="month"],
+    .chart-controls select {
+      padding: 8px 12px;
+      font-size: 14px;
+    }
+    
+    .tx-count {
+      margin-left: auto;
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    
+    /* Mascot */
+    .mascot-center {
+      text-align: center;
+      margin: 12px 0;
+    }
+    
+    .mascot-center img {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+      image-rendering: auto;
+    }
+    
+    /* Status Bar */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 14px;
+      border: 1px solid var(--ring);
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 12px;
+      text-align: center;
+      line-height: 1.4;
+      min-height: 44px;
+    }
+    
+    .status--rich {
+      background: #e8f5e9;
+      border-color: #c8e6c9;
+      color: #1b5e20;
+    }
+    
+    .status--neutral {
+      background: #fff8e1;
+      border-color: #ffe0b2;
+      color: #6d4c41;
+    }
+    
+    .status--poor {
+      background: #fdecea;
+      border-color: #f5c6c3;
+      color: #b3261e;
+    }
+    
+    /* Animations */
+    @keyframes pop {
+      0% { transform: scale(.9) rotate(0deg); }
+      50% { transform: scale(1.08) rotate(-2deg); }
+      100% { transform: scale(1) rotate(0); }
+    }
+    
+    .mascot-animate {
+      animation: pop .6s ease;
+    }
+    
+    /* Chart */
+    .chart-box {
+      height: 300px;
+      position: relative;
+      width: 100%;
+      margin-bottom: 12px;
+    }
+    
+    .chart-box canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+    
+    .chart-legend {
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      text-align: center;
+    }
+    
+    /* Modal */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      padding: 16px;
+      animation: fadeIn .2s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .modal.open {
+      display: flex;
+    }
+    
+    .modal .panel {
+      width: min(600px, 100%);
+      background: #fff;
+      border: 1px solid var(--ring);
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+      overflow: hidden;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .modal header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--ring);
+      font-size: 18px;
+      font-weight: 700;
+    }
+    
+    .modal .content {
+      padding: 20px;
+      display: grid;
+      gap: 14px;
+      overflow-y: auto;
+    }
+    
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    
+    @media (max-width: 520px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .modal .actions {
+      padding: 14px 20px;
+      border-top: 1px solid var(--ring);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    
     /* Toast */
-    .toast{ position:fixed; left:50%; transform:translateX(-50%); bottom:24px; background:#1b5e20; color:#fff; padding:10px 14px; border-radius:12px; box-shadow:var(--shadow); display:none; z-index:10001; font-weight:700 }
-    .toast.show{ display:block }
+    .toast {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 24px;
+      background: #1b5e20;
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      display: none;
+      z-index: 10001;
+      font-weight: 600;
+      font-size: 14px;
+      animation: slideUp .3s ease;
+    }
+    
+    @keyframes slideUp {
+      from {
+        transform: translateX(-50%) translateY(100px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+      }
+    }
+    
+    .toast.show {
+      display: block;
+    }
+    
+    /* Responsive */
+    @media (max-width: 480px) {
+      .container {
+        padding: 12px;
+      }
+      
+      header {
+        margin-bottom: 16px;
+      }
+      
+      h1 {
+        font-size: 24px;
+      }
+      
+      .card-body {
+        padding: 16px;
+      }
+      
+      .btn {
+        padding: 9px 12px;
+        font-size: 13px;
+      }
+      
+      .kpis {
+        gap: 8px;
+      }
+      
+      .kpi {
+        padding: 12px;
+      }
+      
+      .kpi .val {
+        font-size: 16px;
+      }
+      
+      .card h2 {
+        font-size: 18px;
+        margin-bottom: 12px;
+      }
+      
+      .status-bar {
+        padding: 10px 12px;
+        font-size: 13px;
+        min-height: 40px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -93,9 +617,9 @@
         <h1>Quản Lý Chi Tiêu</h1>
       </div>
       <div class="actions">
-        <button id="openSettings" class="btn ghost icon" title="Cài đặt">⚙️ Cài đặt</button>
-        <button id="exportCSV" class="btn ghost icon" title="Xuất CSV">📄 Xuất CSV</button>
-        <button id="clearAll" class="btn danger icon" title="Xóa tất cả dữ liệu">🗑️ Xóa tất cả</button>
+        <button id="openSettings" class="btn ghost" title="Cài đặt">⚙️ Cài đặt</button>
+        <button id="exportCSV" class="btn ghost" title="Xuất CSV">📄 Xuất CSV</button>
+        <button id="clearAll" class="btn danger" title="Xóa tất cả dữ liệu">🗑️ Xóa tất cả</button>
       </div>
     </header>
 
@@ -104,20 +628,20 @@
       <div class="card">
         <div class="card-body">
           <h2>Thêm khoản thu/chi</h2>
-          <div class="mascot-center"><img src="assets/mascot/tiger_logo.png" alt="Mascot form" width="100" height="100"/></div>
+          <div class="mascot-center"><img src="assets/mascot/tiger_logo.png" alt="Mascot form" width="80" height="80"/></div>
           <div class="form-grid">
-            <div>
+            <div class="form-group">
               <label for="txDate">Ngày</label>
               <input id="txDate" type="date" />
             </div>
-            <div>
+            <div class="form-group">
               <label for="type">Loại</label>
               <select id="type">
                 <option value="income">Thu (+)</option>
                 <option value="expense">Chi (-)</option>
               </select>
             </div>
-            <div>
+            <div class="form-group">
               <label for="category">Danh mục</label>
               <input id="category" list="categories" placeholder="VD: Ăn uống" />
               <datalist id="categories">
@@ -133,18 +657,18 @@
                 <option value="Khác"></option>
               </datalist>
             </div>
-            <div>
+            <div class="form-group">
               <label for="amount">Số tiền (đ)</label>
               <input id="amount" type="text" inputmode="numeric" placeholder="VD: 456.456" />
             </div>
-            <div style="grid-column:1/-1">
+            <div class="form-group" style="grid-column:1/-1">
               <label for="note">Ghi chú</label>
               <textarea id="note" placeholder="(tùy chọn)"></textarea>
             </div>
           </div>
-          <div style="display:flex; gap:10px; margin-top:12px">
-            <button id="add" class="btn primary">Thêm</button>
-            <button id="clearAll2" class="btn ghost">Xóa tất cả</button>
+          <div style="display:flex; gap:10px">
+            <button id="add" class="btn primary" style="flex: 1;">Thêm</button>
+            <button id="clearAll2" class="btn ghost" style="flex: 1;">Xóa tất cả</button>
           </div>
         </div>
       </div>
@@ -154,12 +678,12 @@
         <div class="card-body">
           <h2>Tổng kết tháng</h2>
           <div class="chart-controls">
-            <label for="filterMonth" style="font-size:13px; color:var(--muted)">Chọn tháng</label>
-            <input id="filterMonth" type="month" class="btn ghost" />
-            <span id="txCount" style="margin-left:auto; font-size:13px; color:var(--muted)"></span>
+            <label for="filterMonth">Chọn tháng</label>
+            <input id="filterMonth" type="month" />
+            <span id="txCount" class="tx-count"></span>
           </div>
           <div class="mascot-center">
-            <img id="mascotBalance" src="assets/mascot/tiger_rich.png" alt="Mascot balance" />
+            <img id="mascotBalance" src="assets/mascot/tiger_rich.png" alt="Mascot balance" width="80" height="80"/>
           </div>
           <div id="balanceStatus" class="status-bar status--neutral">🙂 Cân bằng tốt. Giữ nhịp chi tiêu nhé!</div>
           <div class="kpis">
@@ -170,20 +694,11 @@
         </div>
       </div>
 
-      <!-- Danh sách -->
-      <div class="card">
-        <div class="card-body">
-          <h2>Danh sách giao dịch</h2>
-          <div id="listHolder" class="list"></div>
-          <div id="emptyState" class="tx" style="display:none; justify-content:center; color:var(--muted)">Chưa có giao dịch nào.</div>
-        </div>
-      </div>
-
       <!-- Biểu đồ -->
       <div class="card">
         <div class="card-body">
           <h2>Biểu đồ</h2>
-          <div class="mascot-center"><img id="mascotChart" src="assets/mascot/tiger_spending.png" alt="Mascot chart"/></div>
+          <div class="mascot-center"><img id="mascotChart" src="assets/mascot/tiger_spending.png" alt="Mascot chart" width="80" height="80"/></div>
           <div class="chart-controls">
             <select id="chartMode" class="btn ghost">
               <option value="byCategory">Theo danh mục (Chi)</option>
@@ -196,7 +711,16 @@
             </select>
           </div>
           <div class="chart-box"><canvas id="chart"></canvas></div>
-          <div id="chartLegend" style="margin-top:8px; font-size:13px; color:var(--muted)"></div>
+          <div id="chartLegend" class="chart-legend"></div>
+        </div>
+      </div>
+
+      <!-- Danh sách -->
+      <div class="card" style="grid-column: 1/-1; @media(min-width:1200px) { grid-column: 1; }">
+        <div class="card-body">
+          <h2>Danh sách giao dịch</h2>
+          <div id="listHolder" class="list"></div>
+          <div id="emptyState" class="empty-state" style="display:none">Chưa có giao dịch nào.</div>
         </div>
       </div>
     </section>
@@ -205,19 +729,19 @@
   <!-- Modal Cài đặt -->
   <div id="settingsModal" class="modal" aria-hidden="true">
     <div class="panel">
-      <header><strong>Cài đặt</strong></header>
+      <header>Cài đặt</header>
       <div class="content">
         <div class="grid-2">
-          <div><label>Ngưỡng Tier 2 (Dư dả) — &ge; đ</label><input id="stTh2" type="number" min="0" step="1000" placeholder="5000000" /></div>
-          <div><label>Ngưỡng Tier 3 (Siêu khá) — &ge; đ</label><input id="stTh3" type="number" min="0" step="1000" placeholder="10000000" /></div>
-          <div><label>Ngưỡng Tier 4 (Đại gia) — &ge; đ</label><input id="stTh4" type="number" min="0" step="1000" placeholder="20000000" /></div>
-          <div><label>Kỷ lục cao nhất</label><input id="stBest" type="text" disabled value="Chưa có" /></div>
+          <div class="form-group"><label>Ngưỡng Tier 2 (Dư dả) — ≥ đ</label><input id="stTh2" type="number" min="0" step="1000" placeholder="5000000" /></div>
+          <div class="form-group"><label>Ngưỡng Tier 3 (Siêu khá) — ≥ đ</label><input id="stTh3" type="number" min="0" step="1000" placeholder="10000000" /></div>
+          <div class="form-group"><label>Ngưỡng Tier 4 (Đại gia) — ≥ đ</label><input id="stTh4" type="number" min="0" step="1000" placeholder="20000000" /></div>
+          <div class="form-group"><label>Kỷ lục cao nhất</label><input id="stBest" type="text" disabled value="Chưa có" /></div>
         </div>
-        <div><label>Thông điệp Tier 0 (Âm)</label><input id="msgT0" type="text" placeholder="😿 Âm ({sign}{amount}). Thử cắt giảm vài khoản không cần thiết nhé!" /></div>
-        <div><label>Thông điệp Tier 1 (Dư nhẹ)</label><input id="msgT1" type="text" placeholder="🙂 Dư nhẹ ({sign}{amount}). Đặt thêm mục tiêu tiết kiệm nhé!" /></div>
-        <div><label>Thông điệp Tier 2 (Dư dả)</label><input id="msgT2" type="text" placeholder="🤑 Dư dả ({sign}{amount})! Tiếp tục tiết kiệm thông minh!" /></div>
-        <div><label>Thông điệp Tier 3 (Siêu khá)</label><input id="msgT3" type="text" placeholder="🚀 Siêu khá ({sign}{amount})! Xịn quá, duy trì đà này!" /></div>
-        <div><label>Thông điệp Tier 4 (Đại gia)</label><input id="msgT4" type="text" placeholder="👑 Đại gia ({sign}{amount})! Đặt mục tiêu đầu tư dài hạn nhé!" /></div>
+        <div class="form-group"><label>Thông điệp Tier 0 (Âm)</label><input id="msgT0" type="text" placeholder="😿 Âm ({sign}{amount}). Thử cắt giảm vài khoản không cần thiết nhé!" /></div>
+        <div class="form-group"><label>Thông điệp Tier 1 (Dư nhẹ)</label><input id="msgT1" type="text" placeholder="🙂 Dư nhẹ ({sign}{amount}). Đặt thêm mục tiêu tiết kiệm nhé!" /></div>
+        <div class="form-group"><label>Thông điệp Tier 2 (Dư dả)</label><input id="msgT2" type="text" placeholder="🤑 Dư d�� ({sign}{amount})! Tiếp tục tiết kiệm thông minh!" /></div>
+        <div class="form-group"><label>Thông điệp Tier 3 (Siêu khá)</label><input id="msgT3" type="text" placeholder="🚀 Siêu khá ({sign}{amount})! Xịn quá, duy trì đà này!" /></div>
+        <div class="form-group"><label>Thông điệp Tier 4 (Đại gia)</label><input id="msgT4" type="text" placeholder="👑 Đại gia ({sign}{amount})! Đặt mục tiêu đầu tư dài hạn nhé!" /></div>
       </div>
       <div class="actions">
         <button id="closeSettings" class="btn ghost">Hủy</button>
@@ -344,9 +868,9 @@
       for(const t of data){
         if(t.type==='income') income+= +t.amount||0; else expense+= +t.amount||0;
         const row = document.createElement('div'); row.className='tx'; row.dataset.id=t.id;
-        const left = document.createElement('div'); left.innerHTML = `<div class="date">${ymd(t.createdAt)}</div><div class="cat">${t.category||'Khác'}</div>`;
+        const left = document.createElement('div'); left.className='tx-left'; left.innerHTML = `<div class="date">${ymd(t.createdAt)}</div><div class="cat">${t.category||'Khác'}</div>`;
         const amt = document.createElement('div'); amt.className = 'amt ' + (t.type==='income'?'in':'out'); amt.textContent = (t.type==='income'?'+':'-') + vnNumberFormat(t.amount) + 'đ';
-        const del = document.createElement('button'); del.className='btn danger'; del.textContent='X'; del.onclick=()=>removeOne(t.id);
+        const del = document.createElement('button'); del.className='btn btn-delete danger-text'; del.textContent='✕'; del.title='Xóa'; del.onclick=()=>removeOne(t.id);
         row.appendChild(left); row.appendChild(amt); row.appendChild(del); listHolder.appendChild(row);
       }
       sumIncomeEl.textContent = vnNumberFormat(income)+'đ'; sumExpenseEl.textContent = vnNumberFormat(expense)+'đ'; sumBalanceEl.textContent = vnNumberFormat(income-expense)+'đ';
@@ -363,21 +887,20 @@
       const mode = (chartModeSel && chartModeSel.value) || 'byCategory';
       let labels=[], values=[], legendText='';
       if(mode==='totals'){ labels=['Thu','Chi']; values=[income, expense]; legendText='Tổng hợp thu/chi'; }
-      else { const map=new Map(); for(const t of data){ if(t.type!=='expense') continue; const k=t.category||'Khác'; map.set(k,(map.get(k)||0)+(+t.amount||0)); } labels=[...map.keys()]; values=[...map.values()]; legendText='Chi tiêu theo danh mục'; }
-      // Fallback donut rỗng
+      else { const map=new Map(); for(const t of data){ if(t.type!=='expense') continue; const k=t.category||'Khác'; map.set(k,(map.get(k)||0)+(+t.amount||0)); } labels=[...map.keys()]; values=[...map.values()]; legendText='Chi theo danh mục'; }
       const total = values.reduce((a,b)=>a+b,0);
       if(values.length===0 || total===0){ labels=['Không có dữ liệu']; values=[0.0001]; }
       const colors = palette(values.length||2);
-      const dataset = { label: legendText, data: values, backgroundColor: (type==='doughnut' || type==='bar')? colors: undefined, borderColor: type==='line'? colors: undefined, fill: type==='line'? false: undefined, borderWidth:2, tension: type==='line'? .3: undefined };
-      chart = new Chart(chartEl,{ type, data:{labels, datasets:[dataset]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:type==='doughnut'?'bottom':'top' }}, scales:(type==='bar'||type==='line')?{ y:{ beginAtZero:true } }:undefined }});
+      const dataset = { label: legendText, data: values, backgroundColor: (type==='doughnut' || type==='bar')? colors: undefined, borderColor: type==='line'? colors: undefined, fill: type==='line'? false: undefined, tension: 0.4 };
+      chart = new Chart(chartEl,{ type, data:{labels, datasets:[dataset]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:type==='doughnut'?'bottom':'top' } }, scales: type!=='doughnut'? {y:{beginAtZero:true}} : undefined } });
       if(chartLegend) chartLegend.textContent = legendText;
     }
 
     // Gestures iPhone: long-press để sửa/xoá, swipe trái để xoá
     function bindGestures(){ if(gestureBound) return; gestureBound=true; let longPressTimer=null; let startX=0, currentX=0, draggingRow=null;
-      function onTouchStart(e){ const row=e.target.closest('.tx'); if(!row) return; draggingRow=row; startX=e.touches[0].clientX; currentX=startX; row.style.transition='none'; longPressTimer=setTimeout(()=>{ clearTimeout(longPressTimer); longPressTimer=null; const id=row.dataset.id; if(!id) return; if(confirm('Sửa giao dịch này? (OK = Sửa, Cancel = Xóa)')){ editOne(id); } else { if(confirm('Xác nhận xóa giao dịch?')) removeOne(id); } },550); }
+      function onTouchStart(e){ const row=e.target.closest('.tx'); if(!row) return; draggingRow=row; startX=e.touches[0].clientX; currentX=startX; row.style.transition='none'; longPressTimer=setTimeout(()=>{ longPressTimer=null; editOne(row.dataset.id); }, 600); }
       function onTouchMove(e){ if(!draggingRow) return; currentX=e.touches[0].clientX; const dx=Math.min(0, currentX-startX); draggingRow.style.transform=`translateX(${dx}px)`; if(Math.abs(dx)>10 && longPressTimer){ clearTimeout(longPressTimer); longPressTimer=null; } }
-      function onTouchEnd(){ if(!draggingRow) return; const dx=currentX-startX; draggingRow.style.transition='transform .2s ease'; if(dx<-80){ const id=draggingRow.dataset.id; draggingRow.style.transform='translateX(-120%)'; setTimeout(()=>{ if(id) removeOne(id); },180); } else { draggingRow.style.transform='translateX(0)'; } draggingRow=null; if(longPressTimer){ clearTimeout(longPressTimer); longPressTimer=null; } }
+      function onTouchEnd(){ if(!draggingRow) return; const dx=currentX-startX; draggingRow.style.transition='transform .2s ease'; if(dx<-80){ const id=draggingRow.dataset.id; draggingRow.style.transform='translateX(-100%)'; setTimeout(()=>removeOne(id), 200); } else { draggingRow.style.transform='translateX(0)'; } if(longPressTimer){ clearTimeout(longPressTimer); longPressTimer=null; } draggingRow=null; }
       document.addEventListener('touchstart', onTouchStart, {passive:true}); document.addEventListener('touchmove', onTouchMove, {passive:true}); document.addEventListener('touchend', onTouchEnd, {passive:true});
     }
 
@@ -388,10 +911,10 @@
       const type = prompt('Loại: income hoặc expense', t.type); if(type===null) return; const note = prompt('Ghi chú:', t.note||'');
       const parsed = Number(String(amount).replace(/\D/g,'')); data[i] = {...t, amount: isNaN(parsed)?t.amount:parsed, category, type: (type==='income'?'income':'expense'), note}; save(data); render();
     }
-    function add(){ const amount=parseAmountField(); const type=$('#type')?$('#type').value:'expense'; const category=$('#category')?($('#category').value||'').trim():''; const note=$('#note')?($('#note').value||'').trim():''; const dateVal=txDateEl?txDateEl.value:''; if(!amount){ alert('Vui lòng nhập số tiền hợp lệ'); return } const createdAt = dateVal ? new Date(dateVal + 'T00:00:00').getTime() : Date.now(); const data = load(); data.unshift({ id: crypto.randomUUID(), amount, type, category, note, createdAt }); save(data); if($('#amount')) $('#amount').value=''; if($('#category')) $('#category').value=''; if($('#note')) $('#note').value=''; render(); }
+    function add(){ const amount=parseAmountField(); const type=$('#type')?$('#type').value:'expense'; const category=$('#category')?($('#category').value||'').trim():''; const note=$('#note')?($('#note').value||'').trim():''; if(!amount){ alert('Nhập số tiền!'); return; } const t={id: Date.now()+'_'+Math.random(), type, amount, category, note, createdAt: new Date($('#txDate').value||new Date()).getTime()}; const data=load(); data.unshift(t); save(data); $('#amount').value=''; $('#category').value=''; $('#note').value=''; showToast('Đã thêm giao dịch'); render(); }
 
     // Toast
-    function showToast(text){ const t=$('#appToast'); if(!t) return; t.textContent=text; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 2200); }
+    function showToast(text){ const t=$('#appToast'); if(!t) return; t.textContent=text; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 3000); }
 
     // Confetti
     function fireConfetti(level=1){
@@ -405,7 +928,7 @@
       const colors = ['#b3261e','#ff8f00','#43a047','#1e88e5','#8e24aa','#00897b','#fdd835','#5d4037'];
       const count = 60 + level*20;
       for(let i=0;i<count;i++){
-        particles.push({x: Math.random()*canvas.width, y: -20 - Math.random()*40, r: 4 + Math.random()*6, c: colors[i%colors.length], vy: 2 + Math.random()*3 + level*0.5, vx: (Math.random()-0.5)*2, a: 1, g: 0.05});
+        particles.push({x: Math.random()*canvas.width, y: -20 - Math.random()*40, r: 4 + Math.random()*6, c: colors[i%colors.length], vy: 2 + Math.random()*3 + level*0.5, vx: (Math.random()-0.5)*2, a: 1, g: 0.15});
       }
       let t=0; const maxT=120;
       function tick(){
@@ -433,13 +956,13 @@
     const stTh2=$('#stTh2'), stTh3=$('#stTh3'), stTh4=$('#stTh4'), stBest=$('#stBest');
     const msgT0=$('#msgT0'), msgT1=$('#msgT1'), msgT2=$('#msgT2'), msgT3=$('#msgT3'), msgT4=$('#msgT4');
     function populateSettings(){ stTh2.value = SETTINGS.thresholds.t2; stTh3.value = SETTINGS.thresholds.t3; stTh4.value = SETTINGS.thresholds.t4; stBest.value = 'Tier ' + (SETTINGS.bestTier||0); msgT0.value = SETTINGS.messages.t0; msgT1.value = SETTINGS.messages.t1; msgT2.value = SETTINGS.messages.t2; msgT3.value = SETTINGS.messages.t3; msgT4.value = SETTINGS.messages.t4; }
-    function applySettingsFromForm(){ const t2=Math.max(0, Number(stTh2.value||0)); const t3=Math.max(t2, Number(stTh3.value||0)); const t4=Math.max(t3, Number(stTh4.value||0)); SETTINGS.thresholds={t2,t3,t4}; SETTINGS.messages={ t0: msgT0.value, t1: msgT1.value, t2: msgT2.value, t3: msgT3.value, t4: msgT4.value }; saveSettings(SETTINGS); showToast('Đã lưu cài đặt'); if(modal) modal.classList.remove('open'); render(); }
+    function applySettingsFromForm(){ const t2=Math.max(0, Number(stTh2.value||0)); const t3=Math.max(t2, Number(stTh3.value||0)); const t4=Math.max(t3, Number(stTh4.value||0)); SETTINGS.thresholds={t2, t3, t4}; SETTINGS.messages={t0: msgT0.value||SETTINGS.messages.t0, t1: msgT1.value||SETTINGS.messages.t1, t2: msgT2.value||SETTINGS.messages.t2, t3: msgT3.value||SETTINGS.messages.t3, t4: msgT4.value||SETTINGS.messages.t4}; saveSettings(SETTINGS); modal.classList.remove('open'); showToast('Đã lưu cài đặt'); render(); }
     if(openBtn){ openBtn.addEventListener('click', ()=>{ populateSettings(); if(modal) modal.classList.add('open'); }); }
     if(closeBtn){ closeBtn.addEventListener('click', ()=>{ if(modal) modal.classList.remove('open'); }); }
     if(saveBtn){ saveBtn.addEventListener('click', applySettingsFromForm); }
 
     // Events
-    function clearAll(){ if(!confirm('Xóa tất cả giao dịch?')) return; try{ localStorage.setItem(STORAGE_KEY,'[]'); }catch(e){ localStorage.removeItem(STORAGE_KEY); } lastTier=0; render(); showToast('Đã xóa tất cả'); }
+    function clearAll(){ if(!confirm('Xóa tất cả giao dịch?')) return; try{ localStorage.setItem(STORAGE_KEY,'[]'); }catch(e){ localStorage.removeItem(STORAGE_KEY); } lastTier=0; render(); showToast('Đã xóa tất cả dữ liệu'); }
     if($('#add')) $('#add').addEventListener('click', add);
     if($('#clearAll')) $('#clearAll').addEventListener('click', clearAll);
     if($('#clearAll2')) $('#clearAll2').addEventListener('click', clearAll);
