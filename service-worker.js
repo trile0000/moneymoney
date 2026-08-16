@@ -1,48 +1,146 @@
-const CACHE_NAME = "expense-cache-v2";
-const OFFLINE_ASSETS = [
-  "./",
-  "./index.html",
-  "./manifest.json",
-  "./assets/icon-192.png",
-  "./assets/icon-512.png",
-  "./assets/apple-touch-icon.png"
+/* Service Worker v2 — sửa lỗi #14–#17
+ * - HTML / JS / CSS: NETWORK-FIRST (timeout 4s → cache) → deploy mới là người dùng thấy ngay, không kẹt bản cũ.
+ * - Ảnh / font / thư viện vendor / manifest: CACHE-FIRST (bất biến theo phiên bản cache).
+ * - Không dùng ignoreSearch (cache-busting ?v= hoạt động).
+ * - KHÔNG skipWaiting tự động: bản mới nằm chờ tới khi người dùng bấm "Tải lại" trên banner (postMessage SKIP_WAITING).
+ * - Precache toàn bộ app shell kể cả Chart.js + font (self-host) → offline đầy đủ.
+ * Đổi CACHE_VERSION mỗi lần deploy (node scripts/bump-version.mjs <version>).
+ */
+const CACHE_VERSION = '2.0.0';
+const CACHE_NAME = `mm-${CACHE_VERSION}`;
+
+const PRECACHE = [
+  './',
+  './index.html',
+  './manifest.json',
+  './css/app.css',
+  './vendor/chart.umd.js',
+  './js/main.js',
+  './js/version.js',
+  './js/state.js',
+  './js/storage.js',
+  './js/migrate.js',
+  './js/utils/id.js',
+  './js/utils/date.js',
+  './js/utils/money.js',
+  './js/utils/csv.js',
+  './js/utils/dom.js',
+  './js/features/recurring.js',
+  './js/features/achievements.js',
+  './js/features/importExport.js',
+  './js/ui/toast.js',
+  './js/ui/confetti.js',
+  './js/ui/modal.js',
+  './js/ui/undo.js',
+  './js/ui/list.js',
+  './js/ui/gestures.js',
+  './js/ui/charts.js',
+  './js/ui/swUpdate.js',
+  './js/ui/amountInput.js',
+  './js/ui/confirm.js',
+  './js/ui/editSheet.js',
+  './assets/fonts/Baloo2-latin-vi.woff2',
+  './assets/fonts/Quicksand-latin-vi.woff2',
+  './assets/mascot/sm/tiger_logo.webp',
+  './assets/mascot/sm/tiger_logo.png',
+  './assets/mascot/sm/tiger_rich.webp',
+  './assets/mascot/sm/tiger_income.webp',
+  './assets/mascot/sm/tiger_poor.webp',
+  './assets/mascot/sm/tiger_spending.webp',
+  './assets/icon-192.png',
+  './assets/icon-512.png',
+  './assets/icon-512-maskable.png',
+  './assets/apple-touch-icon.png',
+  './assets/favicon-64.png',
 ];
 
-self.addEventListener("install", (event) => {
+const NETWORK_FIRST_TIMEOUT_MS = 4000;
+
+self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
-    await cache.addAll(OFFLINE_ASSETS);
-    self.skipWaiting();
+    // Thêm từng file để 1 file lỗi không làm hỏng toàn bộ precache (nhưng ghi log)
+    await Promise.all(PRECACHE.map(async (url) => {
+      try {
+        const resp = await fetch(new Request(url, { cache: 'reload' }));
+        if (resp.ok) await cache.put(url, resp);
+        else console.warn('[SW] precache bỏ qua', url, resp.status);
+      } catch (e) { console.warn('[SW] precache lỗi', url, e && e.message); }
+    }));
+    // KHÔNG gọi self.skipWaiting() ở đây (sửa lỗi #16)…
+    // …NGOẠI TRỪ một lần duy nhất khi nâng cấp từ SW cũ ('expense-cache-*'): trang cũ không có banner
+    // "Có bản mới" nên không thể tự kích hoạt; nếu không kích hoạt ngay, người dùng phải đóng hẳn app mới thấy bản mới.
+    const keys = await caches.keys();
+    if (keys.some((k) => k.startsWith('expense-cache'))) self.skipWaiting();
   })());
 });
 
-self.addEventListener("activate", (event) => {
+self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
-    await Promise.all(keys.map(k => k !== CACHE_NAME && caches.delete(k)));
-    self.clients.claim();
+    await Promise.all(keys.filter((k) => k.startsWith('mm-') || k.startsWith('expense-cache')).filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)));
+    if (self.registration.navigationPreload) { try { await self.registration.navigationPreload.enable(); } catch (e) { /* ignore */ } }
+    await self.clients.claim();
   })());
 });
 
-// Cache-first for all requests; fall back to network if not cached
-self.addEventListener("fetch", (event) => {
-  event.respondWith((async () => {
-    const cached = await caches.match(event.request, { ignoreSearch: true });
-    if (cached) return cached;
-    try {
-      const resp = await fetch(event.request);
-      // Optionally cache new GET requests
-      if (event.request.method === "GET" && resp && resp.status === 200 && resp.type === "basic") {
-        const cache = await caches.open(CACHE_NAME);
-        cache.put(event.request, resp.clone());
-      }
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
+});
+
+function isSameOrigin(url) { return url.origin === self.location.origin; }
+function isNetworkFirst(url) {
+  const p = url.pathname;
+  return p.endsWith('/') || p.endsWith('.html') || (p.endsWith('.js') && !p.includes('/vendor/')) || p.endsWith('.css') || (p.endsWith('.json') && !p.endsWith('manifest.json'));
+}
+
+async function networkFirst(request, event) {
+  const cache = await caches.open(CACHE_NAME);
+  const cacheKey = request.mode === 'navigate' ? './index.html' : request;
+  try {
+    const preload = event && event.preloadResponse ? await event.preloadResponse : null;
+    const resp = preload || await fetchWithTimeout(request, NETWORK_FIRST_TIMEOUT_MS);
+    if (resp && resp.ok) {
+      cache.put(cacheKey, resp.clone()).catch(() => {});
       return resp;
-    } catch (e) {
-      // If offline and request is navigation, serve index.html
-      if (event.request.mode === "navigate") {
-        return caches.match("./index.html");
-      }
-      throw e;
     }
-  })());
+    const cached = await cache.match(cacheKey);
+    return cached || resp;
+  } catch (e) {
+    const cached = await cache.match(cacheKey);
+    if (cached) return cached;
+    if (request.mode === 'navigate') {
+      const shell = await cache.match('./index.html');
+      if (shell) return shell;
+    }
+    throw e;
+  }
+}
+
+async function cacheFirst(request) {
+  const cache = await caches.open(CACHE_NAME);
+  const cached = await cache.match(request);
+  if (cached) return cached;
+  const resp = await fetch(request);
+  if (resp && resp.ok && (resp.type === 'basic' || resp.type === 'cors')) cache.put(request, resp.clone()).catch(() => {});
+  return resp;
+}
+
+function fetchWithTimeout(request, ms) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('timeout')), ms);
+    fetch(request).then((r) => { clearTimeout(timer); resolve(r); }, (e) => { clearTimeout(timer); reject(e); });
+  });
+}
+
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  if (!isSameOrigin(url)) return; // không đụng request ngoài (hiện không có)
+  if (req.mode === 'navigate' || isNetworkFirst(url)) {
+    event.respondWith(networkFirst(req, event));
+  } else {
+    event.respondWith(cacheFirst(req));
+  }
 });

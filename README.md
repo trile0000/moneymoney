@@ -1,0 +1,82 @@
+# Quản Lý Chi Tiêu (moneymoney)
+
+PWA quản lý thu chi cá nhân cho người dùng Việt Nam. **Static site**, chạy trên GitHub Pages, **offline hoàn toàn**, dữ liệu **chỉ nằm trên thiết bị** (localStorage + IndexedDB), không backend, không analytics.
+
+🔗 https://trile0000.github.io/moneymoney/
+
+## Tính năng (bản 2.0.0 — P0)
+
+- Thêm / **sửa (bottom sheet)** / **xóa có Hoàn tác 5 giây** khoản thu–chi; nhập số tiền gõ tắt `50k`, `1tr5`, `1.250.000` có xác nhận ngay dưới ô.
+- Tổng kết theo tháng, mascot hổ + 5 tier (ngưỡng & thông điệp tùy chỉnh), kỷ lục — chỉ tính cho tháng hiện tại.
+- Biểu đồ danh mục / thu-chi / biến động 12 tháng (Chart.js self-host), ghi rõ phạm vi dữ liệu.
+- **Lương định kỳ** tự sinh ngày 01, **bù đủ kỳ thiếu** dù không mở app đúng ngày.
+- **Xuất CSV** (RFC 4180, BOM UTF-8 — mở Excel tiếng Việt đúng), **Nhập CSV** (tự đoán cột, khử trùng), **Sao lưu / Khôi phục JSON**.
+- Danh sách ảo hóa — mượt với 10.000+ giao dịch. Accessibility: bàn phím, ARIA, bẫy focus, reduced-motion.
+- Service worker network-first cho HTML/JS/CSS + banner "Có phiên bản mới" → không kẹt bản cũ.
+
+## Cấu trúc
+
+```
+index.html              markup thuần (không inline JS/CSS)
+css/app.css             style + @font-face self-host
+js/
+  main.js               điểm vào, nối state ↔ UI
+  version.js            APP_VERSION (đổi bằng scripts/bump-version.mjs)
+  state.js              state trong bộ nhớ, chỉ mục theo tháng, mutation
+  storage.js            localStorage + IndexedDB, quota, migration khi load
+  migrate.js            schema v1 → v2 (thuần, có test)
+  utils/                id (uuid), date (local YYYY-MM-DD), money (parser VND), csv (RFC 4180), dom (el/trapFocus)
+  features/             recurring (lương định kỳ), achievements (tier), importExport
+  ui/                   list (virtual), editSheet, confirm, modal, undo, gestures, charts, amountInput, toast, confetti, swUpdate
+service-worker.js       precache app shell, network-first HTML/JS/CSS, cache-first asset
+vendor/chart.umd.js     Chart.js 4.4.7 (MIT)
+assets/fonts/           Baloo 2, Quicksand — woff2 subset Latin+Vietnamese (OFL)
+assets/mascot/sm/       mascot 192px webp/png dùng trong app (bản 1024px gốc giữ ở assets/mascot/)
+tests/                  unit test (node --test) + e2e.mjs (Playwright)
+docs/P0-review.md       xác nhận 27 lỗi P0 + lỗi bổ sung
+scripts/bump-version.mjs
+```
+
+## Dữ liệu
+
+- `mm_data_v2`: `{ schemaVersion: 2, transactions: [...], meta, savedAt }`
+- Giao dịch: `{ id (uuid), type: 'income'|'expense', amount, category, note, date: 'YYYY-MM-DD' (giờ địa phương), createdAt (ms), updatedAt?, source: 'manual'|'auto-salary'|'import', periodKey?: 'YYYY-MM', deletedAt? }`
+- `mm_settings_v2`: lương, danh mục lương, `lastSalaryPeriod`, ngưỡng tier, thông điệp, `bestTier`, `bestTierMonth`.
+- Key cũ `mm_transactions_v1` / `mm_settings_v1` **được giữ nguyên** sau khi nâng cấp (phao cứu sinh). Mọi lần lưu ghi song song vào IndexedDB `moneymoney/kv`.
+
+## Phát triển
+
+```bash
+npm test                        # 64 unit test (node >= 20, không cần cài gì)
+python3 -m http.server 8080     # hoặc bất kỳ static server nào
+node tests/e2e.mjs              # Playwright headless (cần `npm i -D playwright` + Chromium)
+```
+
+Không có bước build. Mở `index.html` qua HTTP (không mở file:// vì ES modules + service worker).
+
+## Deploy (GitHub Pages)
+
+1. `node scripts/bump-version.mjs 2.0.1` — đổi đồng thời `APP_VERSION` và `CACHE_VERSION` (bắt buộc mỗi lần deploy để precache mới).
+2. Commit & push lên `main`. GitHub Pages phục vụ từ root.
+3. Người dùng đang mở app sẽ thấy banner **"🆕 Có phiên bản mới — Tải lại"**; người dùng mở lại app nhận bản mới ngay (HTML network-first).
+
+## Cài lên điện thoại
+
+- iPhone: Safari → Chia sẻ → **Thêm vào MH chính**. Android: Chrome → menu → **Cài đặt ứng dụng**.
+- Sau lần mở đầu tiên, app dùng được offline hoàn toàn (kể cả biểu đồ và font).
+
+## Kiểm thử thủ công sau deploy (checklist)
+
+- [ ] Mở app trên máy đã có dữ liệu cũ → toast "Đã nâng cấp dữ liệu (N giao dịch)", số giao dịch không đổi, `mm_transactions_v1` vẫn còn trong DevTools.
+- [ ] Gõ `50k`, `1tr5`, `1.250.000` → hint đúng; thêm với số tiền 0 hoặc danh mục trống → báo lỗi.
+- [ ] Vuốt trái / bấm ✕ → snackbar Hoàn tác; bấm Hoàn tác → quay lại; đợi 5s → mất hẳn.
+- [ ] Chạm dòng → sheet sửa; đổi Thu/Chi, số tiền, lưu → cập nhật.
+- [ ] Đổi sang tháng cũ nhiều tiền → không confetti, Kỷ lục trong Cài đặt không đổi.
+- [ ] Cài đặt → Xuất CSV → mở Excel: đúng cột, dấu tiếng Việt, ghi chú có dấu phẩy không vỡ cột.
+- [ ] Sao lưu JSON → Xóa tất cả (2 bước) → Khôi phục JSON (Thay thế) → dữ liệu về như cũ.
+- [ ] Bật chế độ máy bay → mở lại app → vẫn hiện danh sách + biểu đồ + đúng font.
+- [ ] Deploy bản mới (đổi version) → app đang mở hiện banner "Có phiên bản mới".
+
+## Giấy phép
+
+Mã nguồn: MIT. Chart.js: MIT (`vendor/chart.LICENSE.md`). Font Baloo 2 & Quicksand: SIL OFL 1.1 (`assets/fonts/OFL-*.txt`).

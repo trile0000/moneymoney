@@ -4,646 +4,61 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Quản Lý Chi Tiêu</title>
+  <meta name="description" content="Ứng dụng quản lý chi tiêu cá nhân, chạy offline, dữ liệu chỉ nằm trên máy bạn." />
   <meta name="theme-color" content="#7a2a1a" />
-  <link rel="apple-touch-icon" href="assets/mascot/tiger_logo.png" />
-  <link rel="icon" href="assets/mascot/tiger_logo.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Chi Tiêu" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+  <link rel="icon" href="assets/favicon-64.png" />
   <link rel="manifest" href="manifest.json" />
-
-  <!-- Font vui tươi -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
-
-  <style>
-    :root{
-      --primary:#8B2E1A;
-      --primary-600:#7A2A1A;
-      --primary-700:#662316;
-      --primary-50:#F7E9E6;
-      --bg:#f6f4f3;
-      --surface:#ffffff;
-      --text:#231815;
-      --text-secondary:#5a524d;
-      --muted:#8a7975;
-      --danger:#b3261e;
-      --ok:#2e7d32;
-      --ring:#e9d2cd;
-      --radius:18px;
-      --shadow:0 10px 30px rgba(139,46,26,.08);
-      --shadow-sm:0 4px 12px rgba(139,46,26,.05);
-    }
-    
-    * { box-sizing: border-box; }
-    
-    body {
-      margin: 0;
-      font-family: 'Baloo 2', 'Quicksand', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: radial-gradient(1200px 600px at 10% -10%, var(--primary-50), transparent), var(--bg);
-      color: var(--text);
-      padding-top: calc(env(safe-area-inset-top) + 0px);
-      padding-left: env(safe-area-inset-left);
-      padding-right: env(safe-area-inset-right);
-      line-height: 1.5;
-    }
-    
-    .container {
-      max-width: 1280px;
-      padding: 16px;
-      margin: 0 auto;
-    }
-    
-    /* Header */
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 24px;
-      flex-wrap: wrap;
-    }
-    
-    .title {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex: 1;
-      min-width: 200px;
-    }
-    
-    .logo {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      background: #fff url('assets/mascot/tiger_logo.png') center/cover no-repeat;
-      box-shadow: var(--shadow-sm);
-      flex-shrink: 0;
-    }
-    
-    h1 {
-      font-size: 28px;
-      margin: 0;
-      font-weight: 700;
-    }
-    
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    
-    /* Buttons */
-    .btn {
-      appearance: none;
-      border: none;
-      cursor: pointer;
-      padding: 10px 14px;
-      border-radius: 12px;
-      font-weight: 700;
-      font-size: 14px;
-      transition: all .2s ease;
-      white-space: nowrap;
-    }
-    
-    .btn:active {
-      transform: scale(0.98);
-    }
-    
-    .btn.primary {
-      background: var(--primary);
-      color: #fff;
-      box-shadow: var(--shadow-sm);
-    }
-    
-    .btn.primary:hover {
-      background: var(--primary-600);
-    }
-    
-    .btn.ghost {
-      background: #fff;
-      color: var(--primary-700);
-      border: 1px solid var(--ring);
-    }
-    
-    .btn.ghost:hover {
-      background: var(--primary-50);
-    }
-    
-    .btn.danger {
-      background: var(--danger);
-      color: #fff;
-      box-shadow: var(--shadow-sm);
-    }
-    
-    .btn.danger:hover {
-      background: #a01d1a;
-    }
-    
-    .btn.danger-text {
-      background: transparent;
-      color: var(--danger);
-      border: none;
-      padding: 8px;
-      min-width: 44px;
-      min-height: 44px;
-      font-size: 16px;
-    }
-    
-    /* Grid Layout */
-    .grid {
-      display: grid;
-      gap: 20px;
-      grid-template-columns: 1fr;
-      grid-auto-rows: auto;
-    }
-    
-    @media (min-width: 768px) {
-      .grid {
-        grid-template-columns: 1.2fr 1fr;
-      }
-    }
-    
-    @media (min-width: 1200px) {
-      .grid {
-        grid-template-columns: 1.2fr 1fr 1fr;
-      }
-    }
-    
-    /* Cards */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--ring);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-sm);
-      overflow: hidden;
-    }
-    
-    .card-body {
-      padding: 20px;
-    }
-    
-    .card h2 {
-      font-size: 20px;
-      margin: 0 0 16px;
-      color: var(--text);
-      font-weight: 700;
-    }
-    
-    /* Form Grid */
-    .form-grid {
-      display: grid;
-      gap: 14px;
-      margin-bottom: 16px;
-    }
-    
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    
-    @media (min-width: 480px) {
-      .form-grid {
-        grid-template-columns: 1fr 1fr;
-      }
-    }
-    
-    label {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--muted);
-      display: block;
-    }
-    
-    input, select, textarea {
-      width: 100%;
-      padding: 12px 14px;
-      border-radius: 10px;
-      border: 1px solid var(--ring);
-      outline: none;
-      background: #fff;
-      font-size: 16px;
-      font-family: inherit;
-      color: var(--text);
-      transition: border-color .2s, box-shadow .2s;
-    }
-    
-    input:focus, select:focus, textarea:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(139, 46, 26, 0.1);
-    }
-    
-    textarea {
-      resize: vertical;
-      min-height: 80px;
-    }
-    
-    /* KPI Cards */
-    .kpis {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin: 16px 0;
-    }
-    
-    .kpi {
-      background: #fff;
-      border: 1px solid var(--ring);
-      border-radius: 12px;
-      padding: 14px;
-      text-align: center;
-    }
-    
-    .kpi h4 {
-      margin: 0 0 6px;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    
-    .kpi .val {
-      font-weight: 800;
-      font-size: 18px;
-      color: var(--text);
-      word-break: break-word;
-    }
-    
-    /* Transaction List */
-    .list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    
-    .tx {
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      align-items: center;
-      gap: 12px;
-      padding: 14px;
-      background: #fff;
-      border: 1px solid var(--ring);
-      border-radius: 12px;
-      touch-action: pan-y;
-      transition: background .2s, box-shadow .2s;
-    }
-    
-    .tx:hover {
-      background: var(--primary-50);
-      box-shadow: var(--shadow-sm);
-    }
-    
-    .tx-left {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      overflow: hidden;
-    }
-    
-    .tx .date {
-      font-size: 12px;
-      color: var(--muted);
-    }
-    
-    .tx .cat {
-      font-weight: 700;
-      color: var(--text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    
-    .amt {
-      font-weight: 800;
-      font-size: 16px;
-      text-align: right;
-      white-space: nowrap;
-    }
-    
-    .amt.out {
-      color: var(--danger);
-    }
-    
-    .amt.in {
-      color: var(--ok);
-    }
-    
-    .tx-delete {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 40px;
-      height: 40px;
-      padding: 0;
-      margin-left: 8px;
-    }
-    
-    /* Empty State */
-    .empty-state {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 32px 16px;
-      color: var(--muted);
-      text-align: center;
-      font-size: 14px;
-    }
-    
-    /* Chart Controls */
-    .chart-controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 14px;
-      align-items: center;
-    }
-    
-    .chart-controls label {
-      margin: 0;
-      white-space: nowrap;
-    }
-    
-    .chart-controls input[type="month"],
-    .chart-controls select {
-      padding: 8px 12px;
-      font-size: 14px;
-    }
-    
-    .tx-count {
-      margin-left: auto;
-      font-size: 13px;
-      color: var(--muted);
-      white-space: nowrap;
-    }
-    
-    /* Mascot */
-    .mascot-center {
-      text-align: center;
-      margin: 12px 0;
-    }
-    
-    .mascot-center img {
-      width: 80px;
-      height: 80px;
-      object-fit: contain;
-      image-rendering: auto;
-    }
-    
-    /* Status Bar */
-    .status-bar {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 12px 14px;
-      border: 1px solid var(--ring);
-      border-radius: 10px;
-      font-weight: 700;
-      font-size: 14px;
-      margin-bottom: 12px;
-      text-align: center;
-      line-height: 1.4;
-      min-height: 44px;
-    }
-    
-    .status--rich {
-      background: #e8f5e9;
-      border-color: #c8e6c9;
-      color: #1b5e20;
-    }
-    
-    .status--neutral {
-      background: #fff8e1;
-      border-color: #ffe0b2;
-      color: #6d4c41;
-    }
-    
-    .status--poor {
-      background: #fdecea;
-      border-color: #f5c6c3;
-      color: #b3261e;
-    }
-    
-    /* Animations */
-    @keyframes pop {
-      0% { transform: scale(.9) rotate(0deg); }
-      50% { transform: scale(1.08) rotate(-2deg); }
-      100% { transform: scale(1) rotate(0); }
-    }
-    
-    .mascot-animate {
-      animation: pop .6s ease;
-    }
-    
-    /* Chart */
-    .chart-box {
-      height: 300px;
-      position: relative;
-      width: 100%;
-      margin-bottom: 12px;
-    }
-    
-    .chart-box canvas {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-    }
-    
-    .chart-legend {
-      margin-top: 8px;
-      font-size: 13px;
-      color: var(--muted);
-      text-align: center;
-    }
-    
-    /* Modal */
-    .modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.4);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 10000;
-      padding: 16px;
-      animation: fadeIn .2s ease;
-    }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    
-    .modal.open {
-      display: flex;
-    }
-    
-    .modal .panel {
-      width: min(600px, 100%);
-      background: #fff;
-      border: 1px solid var(--ring);
-      border-radius: 16px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-      overflow: hidden;
-      max-height: 90vh;
-      display: flex;
-      flex-direction: column;
-    }
-    
-    .modal header {
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--ring);
-      font-size: 18px;
-      font-weight: 700;
-    }
-    
-    .modal .content {
-      padding: 20px;
-      display: grid;
-      gap: 14px;
-      overflow-y: auto;
-    }
-    
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-    }
-    
-    @media (max-width: 520px) {
-      .grid-2 {
-        grid-template-columns: 1fr;
-      }
-    }
-    
-    .modal .actions {
-      padding: 14px 20px;
-      border-top: 1px solid var(--ring);
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      flex-shrink: 0;
-    }
-    
-    /* Toast */
-    .toast {
-      position: fixed;
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: 24px;
-      background: #1b5e20;
-      color: #fff;
-      padding: 12px 16px;
-      border-radius: 10px;
-      box-shadow: var(--shadow);
-      display: none;
-      z-index: 10001;
-      font-weight: 600;
-      font-size: 14px;
-      animation: slideUp .3s ease;
-    }
-    
-    @keyframes slideUp {
-      from {
-        transform: translateX(-50%) translateY(100px);
-        opacity: 0;
-      }
-      to {
-        transform: translateX(-50%) translateY(0);
-        opacity: 1;
-      }
-    }
-    
-    .toast.show {
-      display: block;
-    }
-    
-    /* Responsive */
-    @media (max-width: 480px) {
-      .container {
-        padding: 12px;
-      }
-      
-      header {
-        margin-bottom: 16px;
-      }
-      
-      h1 {
-        font-size: 24px;
-      }
-      
-      .card-body {
-        padding: 16px;
-      }
-      
-      .btn {
-        padding: 9px 12px;
-        font-size: 13px;
-      }
-      
-      .kpis {
-        gap: 8px;
-      }
-      
-      .kpi {
-        padding: 12px;
-      }
-      
-      .kpi .val {
-        font-size: 16px;
-      }
-      
-      .card h2 {
-        font-size: 18px;
-        margin-bottom: 12px;
-      }
-      
-      .status-bar {
-        padding: 10px 12px;
-        font-size: 13px;
-        min-height: 40px;
-      }
-    }
-  </style>
+  <link rel="preload" href="assets/fonts/Baloo2-latin-vi.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="css/app.css" />
 </head>
 <body>
+  <a class="skip-link" href="#main">Bỏ qua tới nội dung chính</a>
+
+  <div id="updateBanner" class="update-banner" role="status">
+    <span>🆕 Có phiên bản mới</span>
+    <button id="updateReload" class="btn" type="button">Tải lại</button>
+    <button id="updateDismiss" class="icon-btn" type="button" aria-label="Đóng thông báo cập nhật" style="color:#fff">✕</button>
+  </div>
+
   <div class="container">
-    <header>
+    <header class="app-header">
       <div class="title">
-        <div class="logo" aria-label="Tiger logo"></div>
-        <h1>Quản Lý Chi Tiêu</h1>
+        <div class="logo" role="img" aria-label="Logo hổ vàng"></div>
+        <h1>Quản Lý Chi Tiêu <span class="offline-badge" aria-live="polite">Offline</span></h1>
       </div>
       <div class="actions">
-        <button id="openSettings" class="btn ghost" title="Cài đặt">⚙️ Cài đặt</button>
-        <button id="exportCSV" class="btn ghost" title="Xuất CSV">📄 Xuất CSV</button>
-        <button id="clearAll" class="btn danger" title="Xóa tất cả dữ liệu">🗑️ Xóa tất cả</button>
+        <button id="openSettings" class="btn ghost" type="button" aria-haspopup="dialog">⚙️ Cài đặt</button>
+        <button id="exportCSV" class="btn ghost" type="button">📄 Xuất CSV</button>
+        <button id="clearAll" class="btn danger" type="button" aria-haspopup="dialog">🗑️ Xóa tất cả</button>
       </div>
     </header>
 
+    <main id="main">
     <section class="grid">
-      <!-- Form -->
+      <!-- Form thêm -->
       <div class="card">
         <div class="card-body">
-          <h2>Thêm khoản thu/chi</h2>
-          <div class="mascot-center"><img src="assets/mascot/tiger_logo.png" alt="Mascot form" width="80" height="80"/></div>
-          <div class="form-grid">
+          <h2 id="addTitle">Thêm khoản thu/chi</h2>
+          <div class="mascot-center"><img src="assets/mascot/sm/tiger_logo.webp" alt="" width="80" height="80" /></div>
+          <form id="addForm" class="form-grid" novalidate aria-labelledby="addTitle">
             <div class="form-group">
               <label for="txDate">Ngày</label>
-              <input id="txDate" type="date" />
+              <input id="txDate" name="date" type="date" required />
             </div>
             <div class="form-group">
               <label for="type">Loại</label>
-              <select id="type">
-                <option value="income">Thu (+)</option>
+              <select id="type" name="type">
                 <option value="expense">Chi (-)</option>
+                <option value="income">Thu (+)</option>
               </select>
             </div>
             <div class="form-group">
               <label for="category">Danh mục</label>
-              <input id="category" list="categories" placeholder="VD: Ăn uống" />
+              <input id="category" name="category" list="categories" placeholder="VD: Ăn uống" autocomplete="off" required />
               <datalist id="categories">
                 <option value="Ăn uống"></option>
                 <option value="Đi lại"></option>
@@ -654,22 +69,28 @@
                 <option value="Sức khỏe"></option>
                 <option value="Nhà cửa"></option>
                 <option value="Gia đình"></option>
+                <option value="Lương"></option>
                 <option value="Khác"></option>
               </datalist>
+              <div id="recentCats" class="chips" aria-label="Danh mục dùng gần đây"></div>
             </div>
             <div class="form-group">
               <label for="amount">Số tiền (đ)</label>
-              <input id="amount" type="text" inputmode="numeric" placeholder="VD: 456.456" />
+              <input id="amount" name="amount" type="text" inputmode="text" autocomplete="off" placeholder="VD: 50k, 1tr5, 1.250.000" aria-describedby="amountHint" required />
+              <div id="amountHint" class="hint" aria-live="polite"></div>
             </div>
-            <div class="form-group" style="grid-column:1/-1">
+            <div class="form-group full">
               <label for="note">Ghi chú</label>
-              <textarea id="note" placeholder="(tùy chọn)"></textarea>
+              <textarea id="note" name="note" placeholder="(tùy chọn)" rows="2"></textarea>
             </div>
-          </div>
-          <div style="display:flex; gap:10px">
-            <button id="add" class="btn primary" style="flex: 1;">Thêm</button>
-            <button id="clearAll2" class="btn ghost" style="flex: 1;">Xóa tất cả</button>
-          </div>
+            <div class="form-group full">
+              <div id="formError" class="form-error" role="alert" aria-live="assertive"></div>
+              <div class="row-actions">
+                <button id="add" class="btn primary" type="submit">Thêm</button>
+                <button id="resetForm" class="btn ghost" type="button">Nhập lại</button>
+              </div>
+            </div>
+          </form>
         </div>
       </div>
 
@@ -680,16 +101,17 @@
           <div class="chart-controls">
             <label for="filterMonth">Chọn tháng</label>
             <input id="filterMonth" type="month" />
-            <span id="txCount" class="tx-count"></span>
+            <button id="thisMonth" class="btn ghost small" type="button">Tháng này</button>
+            <span id="txCount" class="tx-count" aria-live="polite"></span>
           </div>
           <div class="mascot-center">
-            <img id="mascotBalance" src="assets/mascot/tiger_rich.png" alt="Mascot balance" width="80" height="80"/>
+            <img id="mascotBalance" src="assets/mascot/sm/tiger_income.webp" alt="Mascot hổ thể hiện tình trạng số dư" width="80" height="80" />
           </div>
-          <div id="balanceStatus" class="status-bar status--neutral">🙂 Cân bằng tốt. Giữ nhịp chi tiêu nhé!</div>
-          <div class="kpis">
-            <div class="kpi"><h4>Tổng Thu</h4><div class="val" id="sumIncome">0</div></div>
-            <div class="kpi"><h4>Tổng Chi</h4><div class="val" id="sumExpense">0</div></div>
-            <div class="kpi"><h4>Số Dư</h4><div class="val" id="sumBalance">0</div></div>
+          <div id="balanceStatus" class="status-bar status--neutral" role="status" aria-live="polite">🙂 Cân bằng tốt. Giữ nhịp chi tiêu nhé!</div>
+          <div class="kpis" role="group" aria-label="Tổng kết tháng đang chọn">
+            <div class="kpi"><h4>Tổng thu (đ)</h4><div class="val" id="sumIncome">0</div></div>
+            <div class="kpi"><h4>Tổng chi (đ)</h4><div class="val" id="sumExpense">0</div></div>
+            <div class="kpi"><h4>Số dư (đ)</h4><div class="val" id="sumBalance">0</div></div>
           </div>
         </div>
       </div>
@@ -698,367 +120,142 @@
       <div class="card">
         <div class="card-body">
           <h2>Biểu đồ</h2>
-          <div class="mascot-center"><img id="mascotChart" src="assets/mascot/tiger_spending.png" alt="Mascot chart" width="80" height="80"/></div>
+          <div class="mascot-center"><img id="mascotChart" src="assets/mascot/sm/tiger_spending.webp" alt="" width="80" height="80" /></div>
           <div class="chart-controls">
-            <select id="chartMode" class="btn ghost">
+            <label for="chartMode" class="sr-only">Nội dung biểu đồ</label>
+            <select id="chartMode">
               <option value="byCategory">Theo danh mục (Chi)</option>
               <option value="totals">Tổng Thu vs Chi</option>
-              <option value="trend">Biến động</option>
+              <option value="trend">Biến động theo tháng</option>
             </select>
-            <select id="chartType" class="btn ghost">
+            <label for="chartType" class="sr-only">Kiểu biểu đồ</label>
+            <select id="chartType">
               <option value="doughnut">Donut</option>
               <option value="bar">Cột</option>
-              <option value="line">Đường thẳng</option>
+              <option value="line">Đường</option>
             </select>
           </div>
-          <div class="chart-box"><canvas id="chart"></canvas></div>
-          <div id="chartLegend" class="chart-legend"></div>
+          <div class="chart-box"><canvas id="chart" role="img" aria-label="Biểu đồ chi tiêu"></canvas></div>
+          <div id="chartScope" class="chart-scope" aria-live="polite"></div>
         </div>
       </div>
 
       <!-- Danh sách -->
-      <div class="card" style="grid-column: 1/-1; @media(min-width:1200px) { grid-column: 1; }">
+      <div class="card span-all">
         <div class="card-body">
-          <h2>Danh sách giao dịch</h2>
-          <div id="listHolder" class="list"></div>
-          <div id="emptyState" class="empty-state" style="display:none">Chưa có giao dịch nào.</div>
+          <div class="list-toolbar">
+            <h2 style="margin:0">Danh sách giao dịch</h2>
+            <span class="list-help">Chạm để sửa · Vuốt trái hoặc ✕ để xóa (có Hoàn tác 5 giây)</span>
+          </div>
+          <div id="listViewport" class="list-viewport" tabindex="0" role="list" aria-label="Danh sách giao dịch tháng đang chọn">
+            <div id="listCanvas" class="list-canvas"></div>
+          </div>
+          <div id="emptyState" class="empty-state" style="display:none">Chưa có giao dịch nào trong tháng này.</div>
         </div>
       </div>
     </section>
+    </main>
+
+    <footer style="text-align:center;font-size:12px;color:var(--muted);margin:24px 0 8px">
+      Dữ liệu chỉ lưu trên thiết bị của bạn, không gửi đi đâu. · <span id="appVersion"></span>
+    </footer>
   </div>
 
   <!-- Modal Cài đặt -->
-  <div id="settingsModal" class="modal" aria-hidden="true">
+  <div id="settingsModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" aria-hidden="true">
     <div class="panel">
-      <header>Cài đặt</header>
+      <header><span id="settingsTitle">Cài đặt</span><button class="icon-btn" type="button" data-close aria-label="Đóng">✕</button></header>
       <div class="content">
-        <div class="form-group"><label>Lương hàng tháng (đ)</label><input id="stSalary" type="number" min="0" step="100000" placeholder="0" /></div>
-        <div class="form-group"><label>Danh mục lương</label><input id="stSalaryCategory" type="text" placeholder="VD: Lương cơ bản" value="Lương" /></div>
-        <div style="padding: 10px; background: #fff8e1; border-radius: 8px; border: 1px solid #ffe0b2; font-size: 13px; color: #6d4c41; margin-bottom: 10px;">
-          💡 Nếu lương > 0, hệ thống sẽ tự động thêm vào ngày 1 đầu tháng (nếu chưa có)
-        </div>
-        <hr style="border: none; border-top: 1px solid var(--ring); margin: 16px 0;">
+        <p class="section-title">Lương định kỳ</p>
         <div class="grid-2">
-          <div class="form-group"><label>Ngưỡng Tier 2 (Dư dả) — ≥ đ</label><input id="stTh2" type="number" min="0" step="1000" placeholder="5000000" /></div>
-          <div class="form-group"><label>Ngưỡng Tier 3 (Siêu khá) — ≥ đ</label><input id="stTh3" type="number" min="0" step="1000" placeholder="10000000" /></div>
-          <div class="form-group"><label>Ngưỡng Tier 4 (Đại gia) — ≥ đ</label><input id="stTh4" type="number" min="0" step="1000" placeholder="20000000" /></div>
-          <div class="form-group"><label>Kỷ lục cao nhất</label><input id="stBest" type="text" disabled value="Chưa có" /></div>
+          <div class="form-group"><label for="stSalary">Lương hàng tháng (đ)</label><input id="stSalary" type="text" inputmode="text" placeholder="VD: 15tr" aria-describedby="stSalaryHint" /><div id="stSalaryHint" class="hint"></div></div>
+          <div class="form-group"><label for="stSalaryCategory">Danh mục lương</label><input id="stSalaryCategory" type="text" placeholder="VD: Lương" value="Lương" /></div>
         </div>
-        <div class="form-group"><label>Thông điệp Tier 0 (Âm)</label><input id="msgT0" type="text" placeholder="😿 Âm ({sign}{amount}). Thử cắt giảm vài khoản không cần thiết nhé!" /></div>
-        <div class="form-group"><label>Thông điệp Tier 1 (Dư nhẹ)</label><input id="msgT1" type="text" placeholder="🙂 Dư nhẹ ({sign}{amount}). Đặt thêm mục tiêu tiết kiệm nhé!" /></div>
-        <div class="form-group"><label>Thông điệp Tier 2 (Dư dả)</label><input id="msgT2" type="text" placeholder="🤑 Dư dả ({sign}{amount})! Tiếp tục tiết kiệm thông minh!" /></div>
-        <div class="form-group"><label>Thông điệp Tier 3 (Siêu khá)</label><input id="msgT3" type="text" placeholder="🚀 Siêu khá ({sign}{amount})! Xịn quá, duy trì đà này!" /></div>
-        <div class="form-group"><label>Thông điệp Tier 4 (Đại gia)</label><input id="msgT4" type="text" placeholder="👑 Đại gia ({sign}{amount})! Đặt mục tiêu đầu tư dài hạn nhé!" /></div>
+        <div class="note-box">💡 Nếu lương &gt; 0, app tự thêm khoản thu vào ngày 1 mỗi tháng. Kể cả khi bạn không mở app đúng ngày, các tháng còn thiếu sẽ được bù khi mở lại (không thêm trùng nếu tháng đó đã có khoản thu đúng danh mục lương).</div>
+
+        <hr class="sep" />
+        <p class="section-title">Ngưỡng &amp; thông điệp</p>
+        <div class="grid-2">
+          <div class="form-group"><label for="stTh2">Tier 2 (Dư dả) — ≥ đ</label><input id="stTh2" type="text" inputmode="text" placeholder="5tr" /></div>
+          <div class="form-group"><label for="stTh3">Tier 3 (Siêu khá) — ≥ đ</label><input id="stTh3" type="text" inputmode="text" placeholder="10tr" /></div>
+          <div class="form-group"><label for="stTh4">Tier 4 (Đại gia) — ≥ đ</label><input id="stTh4" type="text" inputmode="text" placeholder="20tr" /></div>
+          <div class="form-group"><label for="stBest">Kỷ lục cao nhất</label><input id="stBest" type="text" disabled value="Chưa có" /></div>
+        </div>
+        <div class="form-group"><label for="msgT0">Thông điệp Tier 0 (Âm)</label><input id="msgT0" type="text" /></div>
+        <div class="form-group"><label for="msgT1">Thông điệp Tier 1 (Dư nhẹ)</label><input id="msgT1" type="text" /></div>
+        <div class="form-group"><label for="msgT2">Thông điệp Tier 2 (Dư dả)</label><input id="msgT2" type="text" /></div>
+        <div class="form-group"><label for="msgT3">Thông điệp Tier 3 (Siêu khá)</label><input id="msgT3" type="text" /></div>
+        <div class="form-group"><label for="msgT4">Thông điệp Tier 4 (Đại gia)</label><input id="msgT4" type="text" /></div>
+
+        <hr class="sep" />
+        <p class="section-title">Dữ liệu &amp; sao lưu</p>
+        <div class="data-actions">
+          <button id="backupJSON" class="btn ghost" type="button">💾 Sao lưu JSON</button>
+          <button id="restoreJSON" class="btn ghost" type="button">📂 Khôi phục JSON</button>
+          <button id="importCSV" class="btn ghost" type="button">📥 Nhập CSV</button>
+          <button id="exportCSVAll" class="btn ghost" type="button">📄 Xuất CSV (tất cả)</button>
+        </div>
+        <div id="storageInfo" class="hint"></div>
+        <input id="fileJSON" type="file" accept="application/json,.json" class="sr-only" tabindex="-1" aria-hidden="true" />
+        <input id="fileCSV" type="file" accept="text/csv,.csv,text/plain" class="sr-only" tabindex="-1" aria-hidden="true" />
       </div>
       <div class="actions">
-        <button id="closeSettings" class="btn ghost">Hủy</button>
-        <button id="saveSettings" class="btn primary">Lưu</button>
+        <button id="closeSettings" class="btn ghost" type="button" data-close>Hủy</button>
+        <button id="saveSettings" class="btn primary" type="button">Lưu</button>
       </div>
     </div>
   </div>
 
-  <div id="appToast" class="toast">Đã lưu cài đặt</div>
+  <!-- Bottom sheet sửa giao dịch -->
+  <div id="editSheet" class="modal sheet" role="dialog" aria-modal="true" aria-labelledby="editTitle" aria-hidden="true">
+    <div class="panel">
+      <header><span id="editTitle">Sửa giao dịch</span><button class="icon-btn" type="button" data-close aria-label="Đóng">✕</button></header>
+      <form id="editForm" class="content" novalidate>
+        <input type="hidden" id="edId" />
+        <div class="seg" role="radiogroup" aria-label="Loại giao dịch">
+          <label><input type="radio" name="edType" value="expense" /><span>Chi (−)</span></label>
+          <label><input type="radio" name="edType" value="income" /><span>Thu (+)</span></label>
+        </div>
+        <div class="grid-2">
+          <div class="form-group"><label for="edDate">Ngày</label><input id="edDate" type="date" required /></div>
+          <div class="form-group"><label for="edAmount">Số tiền (đ)</label><input id="edAmount" type="text" inputmode="text" autocomplete="off" aria-describedby="edAmountHint" required data-autofocus /><div id="edAmountHint" class="hint" aria-live="polite"></div></div>
+        </div>
+        <div class="form-group"><label for="edCategory">Danh mục</label><input id="edCategory" type="text" list="categories" autocomplete="off" required /></div>
+        <div class="form-group"><label for="edNote">Ghi chú</label><textarea id="edNote" rows="2"></textarea></div>
+        <div id="edError" class="form-error" role="alert"></div>
+      </form>
+      <div class="actions">
+        <button id="edDelete" class="btn danger" type="button" style="margin-right:auto">🗑️ Xóa</button>
+        <button class="btn ghost" type="button" data-close>Hủy</button>
+        <button id="edSave" class="btn primary" type="button">Lưu</button>
+      </div>
+    </div>
+  </div>
 
-  <!-- Chart.js CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Hộp thoại xác nhận chung (2 bước cho Xóa tất cả) -->
+  <div id="confirmModal" class="modal" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmBody" aria-hidden="true">
+    <div class="panel">
+      <header><span id="confirmTitle">Xác nhận</span></header>
+      <div class="content">
+        <div id="confirmBody"></div>
+        <label id="confirmCheckWrap" style="display:none;align-items:center;gap:8px;font-size:14px;color:var(--text)"><input id="confirmCheck" type="checkbox" style="width:auto" /> <span id="confirmCheckLabel"></span></label>
+      </div>
+      <div class="actions">
+        <button id="confirmExtra" class="btn ghost" type="button" style="margin-right:auto;display:none"></button>
+        <button id="confirmCancel" class="btn ghost" type="button" data-close>Hủy</button>
+        <button id="confirmOk" class="btn danger" type="button">Đồng ý</button>
+      </div>
+    </div>
+  </div>
 
-  <!-- App JS -->
-  <script>
-    const $ = (s)=>document.querySelector(s);
+  <div id="undoBar" class="snackbar" role="status" aria-live="polite">
+    <span id="undoText">Đã xóa</span>
+    <span id="undoCount" class="count">5</span>
+    <button id="undoBtn" class="btn" type="button">Hoàn tác</button>
+  </div>
+  <div id="appToast" class="toast" role="status" aria-live="polite"></div>
 
-    // Elements
-    const listHolder = $('#listHolder'); const emptyState = $('#emptyState');
-    const sumIncomeEl = $('#sumIncome'); const sumExpenseEl = $('#sumExpense'); const sumBalanceEl = $('#sumBalance');
-    const chartEl = $('#chart'); const chartTypeSel = $('#chartType'); const chartModeSel = $('#chartMode'); const chartLegend = $('#chartLegend');
-    const mascotBalance = $('#mascotBalance'); const mascotChart = $('#mascotChart'); const balanceStatus = $('#balanceStatus');
-    const txDateEl = $('#txDate'); const filterMonthEl = $('#filterMonth'); const txCountEl = $('#txCount');
-
-    let chart; let gestureBound=false; let lastMascotPick=null; let lastTier=0; let bestTier=0;
-
-    const STORAGE_KEY = 'mm_transactions_v1';
-    const SETTINGS_KEY = 'mm_settings_v1';
-    const ASSET = 'assets/mascot/';
-
-    // Storage
-    function load(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [] }catch{ return [] } }
-    function save(data){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)) }
-
-    // Number format
-    function vnNumberFormat(n){ return Number(n||0).toLocaleString('vi-VN'); }
-
-    // Settings
-    function loadSettings(){
-      const defaults = {
-        salary: 0,
-        salaryCategory: 'Lương',
-        thresholds: { t2: 5000000, t3: 10000000, t4: 20000000 },
-        messages: {
-          t0: '😿 Âm ({sign}{amount}). Thử cắt giảm vài khoản không cần thiết nhé!',
-          t1: '🙂 Dư nhẹ ({sign}{amount}). Đặt thêm mục tiêu tiết kiệm nhé!',
-          t2: '🤑 Dư dả ({sign}{amount})! Tiếp tục tiết kiệm thông minh!',
-          t3: '🚀 Siêu khá ({sign}{amount})! Xịn quá, duy trì đà này!',
-          t4: '👑 Đại gia ({sign}{amount})! Đặt mục tiêu đầu tư dài hạn nhé!'
-        },
-        bestTier: 0
-      };
-      try{
-        const got = JSON.parse(localStorage.getItem(SETTINGS_KEY)||'null');
-        return got ? { ...defaults, ...got, thresholds: { ...defaults.thresholds, ...(got.thresholds||{}) }, messages: { ...defaults.messages, ...(got.messages||{}) } } : defaults;
-      }catch{ return defaults }
-    }
-    function saveSettings(s){ localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }
-    let SETTINGS = loadSettings();
-    bestTier = SETTINGS.bestTier||0;
-
-    // Amount field formatting
-    const amountInput = $('#amount');
-    if(amountInput){
-      amountInput.addEventListener('input', ()=>{
-        const digits = amountInput.value.replace(/\D/g, '');
-        amountInput.value = digits ? Number(digits).toLocaleString('vi-VN') : '';
-      });
-    }
-    function parseAmountField(){ const el=$('#amount'); return el? Number((el.value||'').replace(/\D/g,'')||0) : 0; }
-
-    // Date helpers
-    const ymd = (ts)=>{ const d=new Date(ts); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` };
-    const ym = (ts)=>{ const d=new Date(ts); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` };
-    function applyMonthFilter(arr){ const v = filterMonthEl? filterMonthEl.value: ''; if(!v) return arr; return arr.filter(t => ym(t.createdAt||Date.now()) === v); }
-
-    // Chart palette
-    function palette(n){
-      const base=['#b3261e','#2e7d32','#7A2A1A','#8B2E1A','#ff8f00','#1565c0','#6a1b9a','#00897b','#c2185b','#455a64','#ef6c00','#5d4037','#8e24aa','#43a047','#1e88e5'];
-      const out=[]; for(let i=0;i<n;i++){ out.push(base[i%base.length]); } return out;
-    }
-
-    // Mascots & status
-    function updateMascots(income, expense){
-      const balance = income - expense;
-      const absFmt = vnNumberFormat(Math.abs(balance)) + 'đ';
-      const sign = balance>0? '+': balance<0? '-': '';
-
-      const { t2, t3, t4 } = SETTINGS.thresholds;
-      let tier = 0; if(balance > 0) tier = 1; if(balance >= t2) tier = 2; if(balance >= t3) tier = 3; if(balance >= t4) tier = 4;
-
-      let pick; let statusClass='status--neutral';
-      if(tier>=2){ pick='tiger_rich.png'; statusClass='status--rich'; }
-      else if(tier===1){ pick='tiger_income.png'; statusClass='status--neutral'; }
-      else { pick='tiger_poor.png'; statusClass='status--poor'; }
-
-      const msgMap = SETTINGS.messages;
-      const templ = tier===4? msgMap.t4 : tier===3? msgMap.t3 : tier===2? msgMap.t2 : tier===1? msgMap.t1 : msgMap.t0;
-      const message = templ.replace('{sign}', sign).replace('{amount}', absFmt);
-
-      if(mascotBalance){
-        if(pick !== lastMascotPick){
-          mascotBalance.classList.remove('mascot-animate');
-          void mascotBalance.offsetWidth;
-          mascotBalance.classList.add('mascot-animate');
-          lastMascotPick = pick;
-        }
-        mascotBalance.src = ASSET + pick;
-      }
-      if(balanceStatus){ balanceStatus.className = 'status-bar ' + statusClass; balanceStatus.textContent = message; }
-      if(mascotChart){ mascotChart.src = ASSET + ((chartModeSel && chartModeSel.value==='byCategory') ? 'tiger_spending.png' : 'tiger_income.png'); }
-
-      if(tier > lastTier){ fireConfetti(tier); }
-      if(tier > bestTier){ bestTier = tier; SETTINGS.bestTier = tier; saveSettings(SETTINGS); showToast('🎉 Kỷ lục mới: Tier ' + tier); }
-      lastTier = tier;
-    }
-
-    // Auto-add salary at beginning of month
-    function autoAddSalary(){
-      if(!SETTINGS.salary || SETTINGS.salary <= 0) return;
-      const today = new Date();
-      if(today.getDate() !== 1) return;
-      
-      const data = load();
-      const thisMonth = ym(Date.now());
-      const alreadyHasSalary = data.some(t => t.type==='income' && ym(t.createdAt||Date.now())===thisMonth && (t.category||'').toLowerCase().includes('lương'));
-      
-      if(!alreadyHasSalary){
-        const newId = Date.now().toString();
-        data.push({
-          id: newId,
-          type: 'income',
-          amount: SETTINGS.salary,
-          category: SETTINGS.salaryCategory || 'Lương',
-          note: 'Tự động thêm từ hệ thống',
-          createdAt: Date.now()
-        });
-        save(data);
-        showToast('💰 Đã tự động thêm lương hàng tháng!');
-        render();
-      }
-    }
-
-    // Render
-    function render(){
-      const up = load().map(t=>({...t, createdAt: t.createdAt || Date.now()})); save(up);
-      const data = applyMonthFilter(up);
-      let income=0, expense=0; listHolder.innerHTML='';
-      emptyState.style.display = data.length? 'none':'flex';
-      txCountEl.textContent = `${data.length} giao dịch`;
-
-      for(const t of data){
-        if(t.type==='income') income+= +t.amount||0; else expense+= +t.amount||0;
-        const row = document.createElement('div'); row.className='tx'; row.dataset.id=t.id;
-        const left = document.createElement('div'); left.className='tx-left'; left.innerHTML = `<div class="date">${ymd(t.createdAt)}</div><div class="cat">${t.category||'Khác'}</div>`;
-        const amt = document.createElement('div'); amt.className = 'amt ' + (t.type==='income'?'in':'out'); amt.textContent = (t.type==='income'?'+':'-') + vnNumberFormat(t.amount) + 'đ';
-        const del = document.createElement('button'); del.className='btn btn-delete danger-text'; del.textContent='✕'; del.title='Xóa'; del.onclick=()=>removeOne(t.id);
-        row.appendChild(left); row.appendChild(amt); row.appendChild(del); listHolder.appendChild(row);
-      }
-      sumIncomeEl.textContent = vnNumberFormat(income)+'đ'; sumExpenseEl.textContent = vnNumberFormat(expense)+'đ'; sumBalanceEl.textContent = vnNumberFormat(income-expense)+'đ';
-      updateMascots(income, expense);
-      renderChart(data, income, expense);
-      bindGestures();
-    }
-
-    // Chart
-    function renderChart(data, income, expense){
-      if(!chartEl || typeof Chart === 'undefined') return;
-      if(chart){ try{ chart.destroy(); }catch(e){} }
-      const type = (chartTypeSel && chartTypeSel.value) || 'doughnut';
-      const mode = (chartModeSel && chartModeSel.value) || 'byCategory';
-      let labels=[], values=[], legendText='';
-      
-      if(mode==='trend'){
-        // Biến động theo tháng
-        const allData = load().map(t=>({...t, createdAt: t.createdAt || Date.now()}));
-        const monthMap = new Map();
-        for(const t of allData){
-          const m = ym(t.createdAt);
-          if(!monthMap.has(m)) monthMap.set(m, {income: 0, expense: 0});
-          const curr = monthMap.get(m);
-          if(t.type==='income') curr.income += +t.amount||0;
-          else curr.expense += +t.amount||0;
-        }
-        const sortedMonths = Array.from(monthMap.keys()).sort();
-        labels = sortedMonths.map(m => {
-          const [y, mo] = m.split('-');
-          return `T${mo}/${y}`;
-        });
-        const incomeVals = sortedMonths.map(m => monthMap.get(m).income);
-        const expenseVals = sortedMonths.map(m => monthMap.get(m).expense);
-        const dataset1 = { label: 'Thu nhập', data: incomeVals, borderColor: '#2e7d32', backgroundColor: type==='doughnut'?'#2e7d32':undefined, fill: type==='line'?false:undefined, tension: 0.3 };
-        const dataset2 = { label: 'Chi tiêu', data: expenseVals, borderColor: '#b3261e', backgroundColor: type==='doughnut'?'#b3261e':undefined, fill: type==='line'?false:undefined, tension: 0.3 };
-        chart = new Chart(chartEl,{ type, data:{labels, datasets:[dataset1, dataset2]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'top' } }, scales: type==='line'||type==='bar'? {y:{beginAtZero:true}}: undefined } });
-        legendText = 'Biến động thu/chi theo tháng';
-      }
-      else if(mode==='totals'){ 
-        labels=['Thu','Chi']; values=[income, expense]; legendText='Tổng hợp thu/chi';
-        const colors = palette(values.length||2);
-        const dataset = { label: legendText, data: values, backgroundColor: (type==='doughnut' || type==='bar')? colors: undefined, borderColor: type==='line'? colors: undefined, fill: type==='line'? false: undefined, tension: 0.3 };
-        chart = new Chart(chartEl,{ type, data:{labels, datasets:[dataset]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:type==='doughnut'?'bottom':'top' } }, scales: type==='line'||type==='bar'? {y:{beginAtZero:true}}: undefined } });
-      }
-      else { 
-        const map=new Map(); for(const t of data){ if(t.type!=='expense') continue; const k=t.category||'Khác'; map.set(k,(map.get(k)||0)+(+t.amount||0)); } labels=[...map.keys()]; values=[...map.values()]; legendText='Chi tiêu theo danh mục';
-        const total = values.reduce((a,b)=>a+b,0);
-        if(values.length===0 || total===0){ labels=['Không có dữ liệu']; values=[0.0001]; }
-        const colors = palette(values.length||2);
-        const dataset = { label: legendText, data: values, backgroundColor: (type==='doughnut' || type==='bar')? colors: undefined, borderColor: type==='line'? colors: undefined, fill: type==='line'? false: undefined, tension: 0.3 };
-        chart = new Chart(chartEl,{ type, data:{labels, datasets:[dataset]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:type==='doughnut'?'bottom':'top' } }, scales: type==='line'||type==='bar'? {y:{beginAtZero:true}}: undefined } });
-      }
-      if(chartLegend) chartLegend.textContent = legendText;
-    }
-
-    // Gestures iPhone: long-press để sửa/xoá, swipe trái để xoá
-    function bindGestures(){ if(gestureBound) return; gestureBound=true; let longPressTimer=null; let startX=0, currentX=0, draggingRow=null;
-      function onTouchStart(e){ const row=e.target.closest('.tx'); if(!row) return; draggingRow=row; startX=e.touches[0].clientX; currentX=startX; row.style.transition='none'; longPressTimer=setTimeout(()=>{ const id=draggingRow.dataset.id; editOne(id); }, 500); }
-      function onTouchMove(e){ if(!draggingRow) return; currentX=e.touches[0].clientX; const dx=Math.min(0, currentX-startX); draggingRow.style.transform=`translateX(${dx}px)`; if(Math.abs(dx)>10) clearTimeout(longPressTimer); }
-      function onTouchEnd(){ if(!draggingRow) return; const dx=currentX-startX; draggingRow.style.transition='transform .2s ease'; if(dx<-80){ const id=draggingRow.dataset.id; draggingRow.style.transform='translateX(-100%)'; setTimeout(()=>removeOne(id), 200); } else { draggingRow.style.transform='translateX(0)'; } clearTimeout(longPressTimer); draggingRow=null; }
-      document.addEventListener('touchstart', onTouchStart, {passive:true}); document.addEventListener('touchmove', onTouchMove, {passive:true}); document.addEventListener('touchend', onTouchEnd, {passive:true});
-    }
-
-    // CRUD
-    function removeOne(id){ const data = load().filter(t=>t.id!==id); save(data); render(); }
-    function editOne(id){ const data=load(); const i=data.findIndex(t=>t.id===id); if(i<0) return; const t=data[i];
-      const amount = prompt('Số tiền (đ):', String(t.amount)); if(amount===null) return; const category = prompt('Danh mục:', t.category||''); if(category===null) return;
-      const type = prompt('Loại: income hoặc expense', t.type); if(type===null) return; const note = prompt('Ghi chú:', t.note||'');
-      const parsed = Number(String(amount).replace(/\D/g,'')); data[i] = {...t, amount: isNaN(parsed)?t.amount:parsed, category, type: (type==='income'?'income':'expense'), note}; save(data); render();
-    }
-    function add(){ const amount=parseAmountField(); const type=$('#type')?$('#type').value:'expense'; const category=$('#category')?($('#category').value||'').trim():''; const note=$('#note')?($('#note').value||'').trim():''; const createdAt=txDateEl? new Date(txDateEl.value).getTime(): Date.now(); const id=Date.now().toString(); const data=load(); data.push({id,type,amount,category,note,createdAt}); save(data); if(amountInput)amountInput.value=''; if($('#category'))$('#category').value=''; if($('#note'))$('#note').value=''; render(); }
-
-    // Toast
-    function showToast(text){ const t=$('#appToast'); if(!t) return; t.textContent=text; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 3000); }
-
-    // Confetti
-    function fireConfetti(level=1){
-      const canvas = document.createElement('canvas');
-      Object.assign(canvas.style,{position:'fixed',inset:'0',pointerEvents:'none',zIndex:9999});
-      document.body.appendChild(canvas);
-      const ctx = canvas.getContext('2d');
-      const resize = ()=>{ canvas.width = innerWidth; canvas.height = innerHeight; };
-      resize();
-      let particles = [];
-      const colors = ['#b3261e','#ff8f00','#43a047','#1e88e5','#8e24aa','#00897b','#fdd835','#5d4037'];
-      const count = 60 + level*20;
-      for(let i=0;i<count;i++){
-        particles.push({x: Math.random()*canvas.width, y: -20 - Math.random()*40, r: 4 + Math.random()*6, c: colors[i%colors.length], vy: 2 + Math.random()*3 + level*0.5, vx: (Math.random()-0.5)*6, g: 0.15, a: 1});
-      }
-      let t=0; const maxT=120;
-      function tick(){
-        t++; ctx.clearRect(0,0,canvas.width,canvas.height);
-        particles.forEach(p=>{ p.vy+=p.g; p.y+=p.vy; p.x+=p.vx; p.a-=0.008; if(p.a<0) p.a=0; ctx.globalAlpha=p.a; ctx.fillStyle=p.c; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill(); });
-        if(t<maxT){ requestAnimationFrame(tick); } else { canvas.remove(); }
-      }
-      requestAnimationFrame(tick);
-      window.addEventListener('resize', resize, { once:true });
-    }
-
-    // Export CSV (theo tháng đang chọn)
-    $('#exportCSV').addEventListener('click', ()=>{
-      const up = load().map(t=>({...t, createdAt: t.createdAt || Date.now()}));
-      const v = filterMonthEl.value; const data = v? up.filter(t=> ym(t.createdAt)===v) : up;
-      const rows = [['type','amount','category','note','createdAt'],
-        ...data.map(t=>[t.type,t.amount,(t.category||'').replaceAll(',', ' '),(t.note||'').replaceAll('\n',' ').replaceAll(',', ' '), new Date(t.createdAt).toISOString()])];
-      const csv = rows.map(r=>r.join(',')).join('\n');
-      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'}); const url = URL.createObjectURL(blob);
-      const a=document.createElement('a'); a.href=url; a.download='moneymoney.csv'; a.click(); URL.revokeObjectURL(url);
-    });
-
-    // Settings UI
-    const modal=$('#settingsModal'); const openBtn=$('#openSettings'); const closeBtn=$('#closeSettings'); const saveBtn=$('#saveSettings');
-    const stSalary=$('#stSalary'), stSalaryCategory=$('#stSalaryCategory');
-    const stTh2=$('#stTh2'), stTh3=$('#stTh3'), stTh4=$('#stTh4'), stBest=$('#stBest');
-    const msgT0=$('#msgT0'), msgT1=$('#msgT1'), msgT2=$('#msgT2'), msgT3=$('#msgT3'), msgT4=$('#msgT4');
-    function populateSettings(){ 
-      stSalary.value = SETTINGS.salary || 0;
-      stSalaryCategory.value = SETTINGS.salaryCategory || 'Lương';
-      stTh2.value = SETTINGS.thresholds.t2; stTh3.value = SETTINGS.thresholds.t3; stTh4.value = SETTINGS.thresholds.t4; stBest.value = 'Tier ' + (SETTINGS.bestTier||0);
-      msgT0.value = SETTINGS.messages.t0; msgT1.value = SETTINGS.messages.t1; msgT2.value = SETTINGS.messages.t2; msgT3.value = SETTINGS.messages.t3; msgT4.value = SETTINGS.messages.t4;
-    }
-    function applySettingsFromForm(){ 
-      const salary = Math.max(0, Number(stSalary.value||0));
-      const salaryCategory = (stSalaryCategory.value||'Lương').trim();
-      const t2=Math.max(0, Number(stTh2.value||0)); const t3=Math.max(t2, Number(stTh3.value||0)); const t4=Math.max(t3, Number(stTh4.value||0)); SETTINGS.thresholds={t2,t3,t4};
-      SETTINGS.messages={t0:msgT0.value,t1:msgT1.value,t2:msgT2.value,t3:msgT3.value,t4:msgT4.value};
-      SETTINGS.salary = salary;
-      SETTINGS.salaryCategory = salaryCategory;
-      saveSettings(SETTINGS); render(); if(modal) modal.classList.remove('open'); showToast('✅ Đã lưu cài đặt');
-    }
-    if(openBtn){ openBtn.addEventListener('click', ()=>{ populateSettings(); if(modal) modal.classList.add('open'); }); }
-    if(closeBtn){ closeBtn.addEventListener('click', ()=>{ if(modal) modal.classList.remove('open'); }); }
-    if(saveBtn){ saveBtn.addEventListener('click', applySettingsFromForm); }
-
-    // Events
-    function clearAll(){ if(!confirm('Xóa tất cả giao dịch?')) return; try{ localStorage.setItem(STORAGE_KEY,'[]'); }catch(e){ localStorage.removeItem(STORAGE_KEY); } lastTier=0; render(); }
-    if($('#add')) $('#add').addEventListener('click', add);
-    if($('#clearAll')) $('#clearAll').addEventListener('click', clearAll);
-    if($('#clearAll2')) $('#clearAll2').addEventListener('click', clearAll);
-    if(chartTypeSel) chartTypeSel.addEventListener('change', ()=>{ render(); });
-    if(chartModeSel) chartModeSel.addEventListener('change', ()=>{ render(); });
-    if(filterMonthEl) filterMonthEl.addEventListener('change', render);
-
-    // SW + init
-    if('serviceWorker' in navigator){ navigator.serviceWorker.register('service-worker.js').catch(()=>{}); }
-    (function init(){
-      window.addEventListener('error', (e)=>{ console.error(e); showToast('Lỗi: '+ (e.message||'JS error')); });
-      const today=new Date(); const yyyy=today.getFullYear(); const mm=String(today.getMonth()+1).padStart(2,'0'); const dd=String(today.getDate()).padStart(2,'0');
-      if($('#txDate')) $('#txDate').value = `${yyyy}-${mm}-${dd}`; if(filterMonthEl) filterMonthEl.value = `${yyyy}-${mm}`; 
-      autoAddSalary();
-      render();
-    })();
-  </script>
+  <script src="vendor/chart.umd.js" defer></script>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>
