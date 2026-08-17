@@ -10,6 +10,7 @@ import { makeBudget } from './features/budgets.js';
 import { makeGoal } from './features/goals.js';
 import { makeDebt } from './features/debts.js';
 import { makeAsset, upsertSnapshot } from './features/networth.js';
+import { iouSummary, iouTxShape, knownPeople } from './features/iou.js';
 
 const state = {
   data: null,
@@ -412,6 +413,22 @@ export async function removeDebtExtraPayment(id, eid) {
   const d = getDebtById(id);
   if (!d) return null;
   return updateDebt(id, { extraPayments: d.extraPayments.filter((x) => x.id !== eid) });
+}
+
+// ---------- Công nợ cá nhân (IOU) — là giao dịch thật gắn meta debt ----------
+export function getIouSummary() { return iouSummary(getVisible()); }
+export function getIouPeople() { return knownPeople(getVisible()); }
+/**
+ * Ghi một khoản công nợ: kind 'lend' | 'borrow' | 'repay' (direction 'in' họ trả tôi | 'out' tôi trả họ)
+ * @returns transaction đã tạo
+ */
+export async function addIou({ kind, direction, person, amount, accountId, date, note, refId }) {
+  const shape = iouTxShape(kind, { direction });
+  let cat = state.data.categories.find((c) => c.name.trim().toLowerCase() === shape.category.name.toLowerCase() && !c.parentId);
+  if (!cat) { cat = makeCategory({ ...shape.category, group: null }); state.data.categories.push(cat); invalidate(); }
+  const debt = { kind, person: String(person || '').trim() };
+  if (refId) debt.refId = refId;
+  return addTransaction({ type: shape.type, amount, categoryId: cat.id, category: cat.name, accountId: accountId || state.settings.defaultAccountId, date: date || toLocalYMD(), note: String(note || '').trim(), source: 'manual', debt });
 }
 
 // ---------- Tài sản & snapshot ----------

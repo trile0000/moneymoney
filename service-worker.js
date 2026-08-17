@@ -6,7 +6,7 @@
  * - Precache toàn bộ app shell kể cả Chart.js + font (self-host) → offline đầy đủ.
  * Đổi CACHE_VERSION mỗi lần deploy (node scripts/bump-version.mjs <version>).
  */
-const CACHE_VERSION = '2.3.0';
+const CACHE_VERSION = '2.4.0';
 const CACHE_NAME = `mm-${CACHE_VERSION}`;
 
 const PRECACHE = [
@@ -27,6 +27,7 @@ const PRECACHE = [
   './js/features/health.js',
   './js/features/importExport.js',
   './js/features/insights.js',
+  './js/features/iou.js',
   './js/features/networth.js',
   './js/features/recurring.js',
   './js/features/rule503020.js',
@@ -46,7 +47,9 @@ const PRECACHE = [
   './js/ui/gestures.js',
   './js/ui/list.js',
   './js/ui/modal.js',
+  './js/ui/onboarding.js',
   './js/ui/pickers.js',
+  './js/ui/receipt.js',
   './js/ui/swUpdate.js',
   './js/ui/theme.js',
   './js/ui/toast.js',
@@ -59,6 +62,7 @@ const PRECACHE = [
   './js/version.js',
   './js/views/budget.js',
   './js/views/home.js',
+  './js/views/iou.js',
   './js/views/settings.js',
   './js/views/tx.js',
   './js/views/wealth.js',

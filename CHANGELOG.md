@@ -2,6 +2,14 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/vi/1.0.0/). Phiên bản = `APP_VERSION` = `CACHE_VERSION`.
 
+## [2.4.0] — 2026-08-17 — P1d-1: công nợ cá nhân, ảnh hóa đơn, onboarding 60 giây
+
+### Thêm
+- **Công nợ cá nhân (cho mượn / đi mượn)**: mỗi khoản là một **giao dịch thật** trên ví gắn meta `debt {kind, person}` (danh mục hệ thống "Cho mượn", "Đi mượn", "Thu nợ", "Trả nợ vay" tự tạo); màn hình tổng hợp theo người (số dư dương = họ nợ bạn, âm = bạn nợ họ), lịch sử, ghi trả/thu nợ (điền sẵn số còn lại), gợi ý tên người đã có; phải thu tính vào **tài sản**, phải trả vào **nợ** ở Tài sản ròng; dòng tóm tắt ở thẻ Ví trang chủ; huy hiệu 🤝 trên dòng giao dịch.
+- **Ảnh hóa đơn**: chụp/chọn ảnh ở form thêm nhanh và sheet sửa → nén bằng canvas (cạnh dài ≤ 1280 px, ≤ ~250 KB, JPEG, giữ hướng EXIF) → lưu **IndexedDB store `blobs`** theo id giao dịch (không phình localStorage); thumbnail, xem lớn (lightbox, Esc để đóng), gỡ ảnh; 📎 trên dòng giao dịch; ảnh bị xóa khi giao dịch bị xóa hẳn / xóa tất cả; **sao lưu JSON có tùy chọn kèm ảnh** (base64) và khôi phục lại ảnh (thay thế hoặc gộp).
+- **Onboarding 60 giây** cho người mới (chưa có giao dịch): 3 bước — ví chính & số dư (+ tài khoản ngân hàng tùy chọn) → lương/thu nhập định kỳ (tạo rule tháng, sinh ngay kỳ tháng này) → ngân sách tổng tháng (gợi ý 80% thu nhập); bỏ qua được; người dùng cũ tự đánh dấu đã qua.
+- Unit test công nợ / tài sản ròng / sao lưu kèm ảnh (98 test tổng); E2E bổ sung 8 kiểm tra (onboarding, công nợ, ảnh hóa đơn); IndexedDB nâng version 2 (thêm store `blobs`, giữ nguyên `kv`).
+
 ## [2.3.0] — 2026-08-17 — P1c: quản lý nợ, tài sản ròng, dự báo dòng tiền, điểm sức khỏe, streak & huy hiệu, biểu đồ mới
 
 ### Thêm

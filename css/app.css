@@ -479,3 +479,15 @@ input[type="color"] { padding: 4px; height: 44px; }
 :root[data-theme="dark"] .hm-cell.l1 { background: #4a2a22; color: #e8dcd7; } :root[data-theme="dark"] .hm-cell.l2 { background: #7a3a28; color: #fff; } :root[data-theme="dark"] .hm-cell.l3 { background: #b5533a; color: #fff; } :root[data-theme="dark"] .hm-cell.l4 { background: #ef8b70; color: #2a1510; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .hm-cell.l1 { background: #4a2a22; color: #e8dcd7; } :root:not([data-theme="light"]) .hm-cell.l2 { background: #7a3a28; color: #fff; } :root:not([data-theme="light"]) .hm-cell.l3 { background: #b5533a; color: #fff; } :root:not([data-theme="light"]) .hm-cell.l4 { background: #ef8b70; color: #2a1510; } }
 @media (max-width: 520px) { .score-ring { width: 72px; height: 72px; } .score-num { font-size: 22px; } .nw-summary { gap: 6px; } }
+
+/* ===== P1d: ảnh hóa đơn / công nợ / onboarding ===== */
+.receipt-box { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 4px 0; }
+.receipt-thumb { display: inline-flex; align-items: center; gap: 6px; }
+.receipt-thumb img { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; border: 1px solid var(--ring); background: var(--surface-2); }
+.receipt-thumb .btn { min-height: 30px; padding: 4px 10px; }
+.lightbox { position: fixed; inset: 0; z-index: 12000; background: rgba(0,0,0,.88); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.lightbox img { max-width: 100%; max-height: 100%; border-radius: 8px; box-shadow: var(--shadow); }
+.lightbox .lb-close { position: absolute; top: 12px; right: 12px; background: rgba(255,255,255,.15); color: #fff; }
+.iou-summary .kpi .val { font-size: 15px; }
+.iou-line a { color: var(--primary-700); font-weight: 700; text-decoration: none; }
+.iou-line a:hover { text-decoration: underline; }

@@ -24,8 +24,9 @@ export function makeAsset(p = {}) {
  * @param {Map} p.balances    số dư ví
  * @param {Array} p.assets    tài sản/nợ khai báo
  * @param {Array} p.debtBalances  [{ name, balance }] dư nợ các khoản vay
+ * @param {object} [p.iou]  { receivable, payable } công nợ cá nhân
  */
-export function computeNetWorth({ accounts, balances, assets = [], debtBalances = [] }) {
+export function computeNetWorth({ accounts, balances, assets = [], debtBalances = [], iou = null }) {
   const items = [];
   let assetsTotal = 0, liabilitiesTotal = 0;
   const byType = new Map();
@@ -41,6 +42,11 @@ export function computeNetWorth({ accounts, balances, assets = [], debtBalances 
     else { assetsTotal += s.value; add(s.type, s.value); items.push({ kind: 'asset', name: s.name, value: s.value, type: s.type }); }
   }
   for (const d of debtBalances) { if (d.balance > 0) { liabilitiesTotal += d.balance; items.push({ kind: 'debt', name: d.name, value: -d.balance, type: 'debt' }); } }
+  // Công nợ cá nhân: người khác nợ tôi = tài sản (phải thu); tôi nợ người khác = nợ (phải trả)
+  if (iou) {
+    if (iou.receivable > 0) { assetsTotal += iou.receivable; add('receivable', iou.receivable); items.push({ kind: 'iou', name: iou.receivableLabel || 'Cho mượn', value: iou.receivable, type: 'receivable' }); }
+    if (iou.payable > 0) { liabilitiesTotal += iou.payable; items.push({ kind: 'iou', name: iou.payableLabel || 'Đi mượn', value: -iou.payable, type: 'payable' }); }
+  }
   return { assets: assetsTotal, liabilities: liabilitiesTotal, net: assetsTotal - liabilitiesTotal, items, byType };
 }
 
@@ -57,6 +63,7 @@ export function diversification(byType) {
   for (const [type, v] of byType) {
     if (v <= 0) continue;
     if (type === 'cash' || type === 'bank' || type === 'ewallet') classes.add('cash');
+    else if (type === 'receivable') continue;
     else classes.add(type);
   }
   return { count: classes.size, score: Math.min(1, classes.size / 4), classes: [...classes] };

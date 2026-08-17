@@ -227,6 +227,7 @@
                     <datalist id="tagSuggest"></datalist>
                   </div>
                 </div>
+                <div id="qReceipt" class="receipt-box"></div>
                 <div id="formError" class="form-error" role="alert" aria-live="assertive"></div>
                 <div class="row-actions">
                   <button id="add" class="btn primary" type="submit" data-i18n="tx.add">Thêm (Enter)</button>
@@ -347,6 +348,17 @@
               <div id="debtList" class="goal-list" role="list"></div>
               <div id="debtEmpty" class="empty-state" style="display:none" data-i18n="debt.empty">Chưa có khoản nợ nào. Thêm khoản vay/trả góp (gốc, lãi %/năm, kỳ hạn) để xem lịch trả nợ và chiến lược trả sớm.</div>
               <div id="debtStrategy" class="strategy" hidden></div>
+            </div>
+          </div>
+
+          <div class="card" id="sec-iou">
+            <div class="card-body">
+              <div class="card-head"><h2 data-i18n="iou.title">Công nợ cá nhân</h2>
+                <div class="row-actions"><button id="addLend" class="btn primary small" type="button" data-i18n="iou.addLend">＋ Cho mượn</button><button id="addBorrow" class="btn ghost small" type="button" data-i18n="iou.addBorrow">＋ Đi mượn</button></div></div>
+              <div id="iouSummary" class="nw-summary iou-summary"></div>
+              <div id="iouList" class="manage-list" role="list"></div>
+              <div id="iouEmpty" class="empty-state" style="display:none" data-i18n="iou.empty">Chưa có công nợ. Ghi "Cho mượn" khi bạn đưa tiền cho ai đó, "Đi mượn" khi bạn vay — mỗi khoản là một giao dịch thật trên ví, app tự tính ai đang nợ ai.</div>
+              <p class="hint" data-i18n="iou.hint">Bấm vào một người để xem lịch sử và ghi nhận trả/thu nợ. Số dư dương = họ nợ bạn (tính vào tài sản), âm = bạn nợ họ.</p>
             </div>
           </div>
 
@@ -483,6 +495,7 @@
           <div class="form-group"><label for="edTags" data-i18n="tx.tags">Tag</label><input id="edTags" type="text" list="tagSuggest" autocomplete="off" /></div>
         </div>
         <div class="form-group"><label for="edNote" data-i18n="tx.note">Ghi chú</label><input id="edNote" type="text" list="noteSuggest" autocomplete="off" /></div>
+        <div id="edReceipt" class="receipt-box"></div>
         <div id="edMeta" class="hint"></div>
         <div id="edError" class="form-error" role="alert"></div>
       </form>
@@ -534,5 +547,9 @@
 
   <script src="vendor/chart.umd.js" defer></script>
   <script type="module" src="js/main.js"></script>
+  <div id="lightbox" class="lightbox" hidden aria-hidden="true" role="dialog" data-i18n-aria="receipt.view" aria-label="Xem ảnh hóa đơn">
+    <button class="icon-btn lb-close" type="button" data-i18n-aria="common.close" aria-label="Đóng">✕</button>
+    <img alt="" />
+  </div>
 </body>
 </html>

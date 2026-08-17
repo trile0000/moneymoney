@@ -30,16 +30,30 @@ export function transactionsToCSV(list, ctx = {}) {
   return toCSV(rows);
 }
 
-export function backupToJSON(data, settings) {
+export function backupToJSON(data, settings, { receipts = null } = {}) {
   const { transactions, ...rest } = data;
-  return JSON.stringify({
+  const out = {
     app: 'moneymoney',
     schemaVersion: SCHEMA_VERSION,
     exportedAt: new Date().toISOString(),
     ...rest,
     transactions: transactions.filter((t) => !t.deletedAt),
     settings,
-  }, null, 2);
+  };
+  if (receipts && receipts.length) out.receipts = receipts; // [{ id, dataUrl }]
+  return JSON.stringify(out, null, 2);
+}
+
+/** data:URL → Blob (không dùng fetch để chạy được offline/SW-less) */
+export function dataUrlToBlob(dataUrl) {
+  const m = /^data:([^;,]+)?(;base64)?,(.*)$/s.exec(String(dataUrl || ''));
+  if (!m) return null;
+  const mime = m[1] || 'application/octet-stream';
+  if (m[2]) { const bin = atob(m[3]); const arr = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i); return new Blob([arr], { type: mime }); }
+  return new Blob([decodeURIComponent(m[3])], { type: mime });
+}
+export function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = () => reject(r.error); r.readAsDataURL(blob); });
 }
 
 export function downloadText(text, filename, mime = 'text/plain;charset=utf-8') {
@@ -195,5 +209,6 @@ export function parseBackupJSON(text) {
   else throw new Error('Không tìm thấy danh sách giao dịch trong file');
   const hasSettings = obj && obj.settings && typeof obj.settings === 'object';
   const { data, settings } = migrate(raw, { settings: hasSettings ? obj.settings : undefined });
-  return { data, transactions: data.transactions, settings: hasSettings ? settings : null, meta: data.meta || {} };
+  const receipts = obj && Array.isArray(obj.receipts) ? obj.receipts.filter((r) => r && r.id && typeof r.dataUrl === 'string') : [];
+  return { data, transactions: data.transactions, settings: hasSettings ? settings : null, meta: data.meta || {}, receipts };
 }

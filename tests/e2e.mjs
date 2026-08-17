@@ -275,7 +275,7 @@ check('CSV có BOM + cột account/tags', csv.charCodeAt(0) === 0xfeff && csv.sp
 await page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller, null, { timeout: 15000 }).catch(() => {});
 await sleep(1500);
 const sw = await page.evaluate(async () => { const keys = await caches.keys(); const c = await caches.open(keys.find((k) => k.startsWith('mm-')) || 'x'); return { controller: !!navigator.serviceWorker.controller, cached: (await c.keys()).length, keys }; });
-check('SW controlling & precache đủ (>= 65 file)', sw.controller && sw.cached >= 65, JSON.stringify(sw));
+check('SW controlling & precache đủ (>= 68 file)', sw.controller && sw.cached >= 68, JSON.stringify(sw));
 await goto('#/home');
 await ctx.setOffline(true);
 await page.reload().catch(() => {});
@@ -314,6 +314,64 @@ check('Tìm kiếm trên 10k < 1s', Date.now() - t1 < 1200 && (await page.evalua
 await page.click('[data-preset="all"]'); await sleep(300);
 await page.evaluate(() => { document.getElementById('listViewport').scrollTop = 20000; }); await sleep(200);
 check('Cuộn xa vẫn ít DOM', (await page.evaluate(() => document.querySelectorAll('.tx').length)) < 60);
+
+// 12b) P1d: onboarding (context mới, không dữ liệu), công nợ, ảnh hóa đơn
+{
+  const octx = await browser.newContext({ viewport: { width: 420, height: 860 }, locale: 'vi-VN', timezoneId: 'Asia/Ho_Chi_Minh' });
+  const op = await octx.newPage();
+  op.on('pageerror', (e) => errors.push('P1D PAGEERROR ' + e.message));
+  op.on('dialog', (d) => { errors.push('P1D DIALOG ' + d.message()); d.dismiss(); });
+  await op.goto(BASE + '#/home');
+  await op.waitForFunction(() => window.__mm && window.__mm.state.getData(), null, { timeout: 10000 });
+  await sleep(900);
+  check('Onboarding mở tự động khi chưa có dữ liệu (bước 1/3)', await op.evaluate(() => document.getElementById('formSheet').getAttribute('aria-hidden') === 'false' && document.getElementById('formSheetTitle').textContent.includes('1/3')));
+  await op.fill('#fs_name', 'Ví chính'); await op.fill('#fs_balance', '2tr'); await op.fill('#fs_bankName', 'VCB'); await op.fill('#fs_bankBalance', '15tr'); await op.click('#fsSave'); await sleep(400);
+  await op.fill('#fs_salary', '18tr'); await op.fill('#fs_day', '5'); await op.click('#fsSave'); await sleep(500);
+  const budgetSuggest = await op.evaluate(() => document.getElementById('fs_budget').value);
+  await op.click('#fsSave'); await sleep(400);
+  const onbDone = await op.evaluate(() => document.getElementById('confirmModal').getAttribute('aria-hidden') === 'false');
+  await op.click('#confirmModal .btn.primary'); await sleep(300);
+  const onb = await op.evaluate(() => { const S = window.__mm.state; return { accs: S.getAccounts().map((a) => [a.name, a.type, a.openingBalance]), rules: S.getRules().length, budgets: S.getBudgets().map((b) => b.amount), onboarded: S.getSettings().onboarded }; });
+  check('Onboarding: 2 ví (2tr + VCB 15tr), rule lương, ngân sách gợi ý 80% (14tr4), onboarded=true', onbDone && budgetSuggest === '14.400.000' && onb.accs.length === 2 && onb.accs[1][2] === 15000000 && onb.rules === 1 && onb.budgets[0] === 14400000 && onb.onboarded === true, JSON.stringify(onb));
+  // công nợ
+  await op.evaluate(() => { location.hash = '#/budget?section=iou'; }); await sleep(500);
+  await op.click('#addLend'); await op.waitForSelector('#formSheet.open'); await op.fill('#fs_person', 'Nam'); await op.fill('#fs_amount', '5tr'); await op.click('#fsSave'); await sleep(400);
+  await op.click('#addBorrow'); await op.waitForSelector('#formSheet.open'); await op.fill('#fs_person', 'Mẹ'); await op.fill('#fs_amount', '10tr'); await op.click('#fsSave'); await sleep(400);
+  const iou1 = await op.evaluate(() => ({ sum: document.getElementById('iouSummary').textContent, rows: document.querySelectorAll('#iouList .mini-row').length }));
+  check('Công nợ: cho Nam mượn 5tr, mượn Mẹ 10tr → phải thu 5tr / phải trả 10tr', iou1.rows === 2 && iou1.sum.includes('5.000.000') && iou1.sum.includes('10.000.000'), JSON.stringify(iou1));
+  await op.click('#iouList .mini-row'); await op.waitForSelector('#formSheet.open'); await op.click('#fsExtra'); await sleep(300);
+  const repayPrefill = await op.evaluate(() => ({ t: document.getElementById('formSheetTitle').textContent, a: document.getElementById('fs_amount').value }));
+  await op.fill('#fs_amount', '2tr'); await op.click('#fsSave'); await sleep(400);
+  const iou2 = await op.evaluate(() => { const S = window.__mm.state; const s = S.getIouSummary(); return { payable: s.payable, receivable: s.receivable, debtTx: S.getVisible().filter((x) => x.debt).length, cats: S.getCategories().filter((c) => ['Cho mượn', 'Đi mượn', 'Trả nợ vay'].includes(c.name)).length, nw: document.getElementById('nwSummary').textContent }; });
+  check('Trả Mẹ 2tr (form điền sẵn 10tr) → còn nợ 8tr; 3 giao dịch công nợ; danh mục hệ thống tự tạo; tài sản ròng tính phải thu/phải trả', repayPrefill.a === '10.000.000' && iou2.payable === 8000000 && iou2.receivable === 5000000 && iou2.debtTx === 3 && iou2.cats === 3 && iou2.nw.includes('8.000.000'), JSON.stringify({ repayPrefill, iou2 }));
+  await op.evaluate(() => { location.hash = '#/home'; }); await sleep(400);
+  check('Trang chủ: dòng công nợ trong thẻ Ví', (await op.evaluate(() => (document.querySelector('#accountTotal .iou-line') || {}).textContent || '')).includes('5.000.000'));
+  // ảnh hóa đơn
+  await op.evaluate(() => { location.hash = '#/tx'; }); await sleep(400);
+  await op.evaluate(async () => {
+    const c = document.createElement('canvas'); c.width = 2000; c.height = 1500; const g = c.getContext('2d'); g.fillStyle = '#fc0'; g.fillRect(0, 0, 2000, 1500); g.fillStyle = '#000'; g.font = '120px sans-serif'; g.fillText('HOA DON', 100, 700);
+    const blob = await new Promise((r) => c.toBlob(r, 'image/png'));
+    const dt = new DataTransfer(); dt.items.add(new File([blob], 'hd.png', { type: 'image/png' }));
+    const input = document.querySelector('#qReceipt input[type=file]'); input.files = dt.files; input.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await sleep(1200);
+  const picked = await op.evaluate(() => ({ shown: !document.querySelector('#qReceipt .receipt-thumb').hidden, kb: document.querySelector('#qReceipt .hint').textContent }));
+  await op.fill('#amount', '123k'); await op.evaluate(() => { const s = document.getElementById('qCategory'); s.value = [...s.options].find((o) => o.textContent.includes('Ăn uống')).value; });
+  await op.click('#add'); await sleep(600);
+  const rec = await op.evaluate(async () => { const tx = window.__mm.state.getVisible().find((x) => x.amount === 123000); const { blobGet } = await import('./js/storage.js'); const b = await blobGet(tx.receiptId); return { rid: !!tx.receiptId, size: b ? b.size : 0, type: b ? b.type : '', reset: document.querySelector('#qReceipt .receipt-thumb').hidden, badge: [...document.querySelectorAll('.tx .badge')].some((x) => x.textContent === '📎') }; });
+  check('Ảnh hóa đơn: nén (2000px PNG → JPEG < 250 KB) và lưu IDB, gắn receiptId, dòng có 📎, picker reset', picked.shown && rec.rid && rec.type === 'image/jpeg' && rec.size > 0 && rec.size < 250 * 1024 && rec.reset && rec.badge, JSON.stringify({ picked, rec }));
+  await op.click('.tx'); await sleep(500);
+  const edThumb = await op.evaluate(() => !document.querySelector('#edReceipt .receipt-thumb').hidden);
+  await op.click('#edReceipt .receipt-thumb .btn'); await sleep(300);
+  const lbOpen = await op.evaluate(() => !document.getElementById('lightbox').hidden);
+  await op.keyboard.press('Escape'); await sleep(200);
+  const lbClosed = await op.evaluate(() => document.getElementById('lightbox').hidden && document.getElementById('editSheet').getAttribute('aria-hidden') === 'false');
+  await op.click('#edReceipt .receipt-thumb .danger-text'); await op.click('#edSave'); await sleep(500);
+  const removed = await op.evaluate(async () => { const tx = window.__mm.state.getVisible().find((x) => x.amount === 123000); const { blobKeys } = await import('./js/storage.js'); return { rid: tx.receiptId || null, keys: (await blobKeys()).length }; });
+  check('Sheet sửa: hiện ảnh, lightbox mở/đóng bằng Esc (sheet vẫn mở), gỡ ảnh → xóa blob', edThumb && lbOpen && lbClosed && removed.rid === null && removed.keys === 0, JSON.stringify({ edThumb, lbOpen, lbClosed, removed }));
+  await op.screenshot({ path: `${OUT}/p1d-iou-home.png`, fullPage: true });
+  await octx.close();
+}
 
 // 13) Desktop screenshots
 const dctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'vi-VN', timezoneId: 'Asia/Ho_Chi_Minh' });

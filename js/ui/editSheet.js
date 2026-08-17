@@ -5,6 +5,7 @@ import { bindAmountInput } from './amountInput.js';
 import { isValidYMD, dateLabel } from '../utils/date.js';
 import { fillAccountSelect, fillCategorySelect, parseTags, tagsToString, refreshNoteSuggest, NEW_CATEGORY_VALUE } from './pickers.js';
 import { t } from '../i18n.js';
+import { mountReceiptPicker, applyReceipt } from './receipt.js';
 
 let amountCtl = null;
 
@@ -24,6 +25,7 @@ export function openEditSheet(tx, { onSave, onDelete, onDuplicate, onNewCategory
   $('#edError').textContent = '';
   const srcKey = { manual: 'edit.sourceManual', recurring: 'edit.sourceRecurring', import: 'edit.sourceImport', 'auto-salary': 'edit.sourceSalary' }[tx.source] || 'edit.sourceManual';
   $('#edMeta').textContent = t('edit.meta', { created: new Date(tx.createdAt).toLocaleString(), source: t(srcKey) });
+  const receipt = mountReceiptPicker($('#edReceipt'), { existingId: tx.receiptId || null });
 
   function curType() { return (typeRadios.find((r) => r.checked) || {}).value || 'expense'; }
   function refreshPickers(keepCat = true) {
@@ -80,7 +82,11 @@ export function openEditSheet(tx, { onSave, onDelete, onDuplicate, onNewCategory
     const v = validate();
     if (v.error) { $('#edError').textContent = v.error; if (v.focus) $(v.focus).focus(); return; }
     saveBtn.disabled = true;
-    try { await onSave(tx.id, v.patch); close(); } finally { saveBtn.disabled = false; }
+    try {
+      const rid = await applyReceipt(tx.id, receipt.getState(), tx.receiptId || null);
+      v.patch.receiptId = rid || null;
+      await onSave(tx.id, v.patch); close();
+    } finally { saveBtn.disabled = false; }
   }
   const del = () => { close(); onDelete(tx.id); };
   const dup = async () => {
@@ -107,6 +113,7 @@ export function openEditSheet(tx, { onSave, onDelete, onDuplicate, onNewCategory
       typeRadios.forEach((r) => r.removeEventListener('change', onType));
       accSel.removeEventListener('change', onAcc);
       catSel.removeEventListener('change', onCat);
+      receipt.destroy();
     },
   });
 }

@@ -14,6 +14,7 @@ import { navigate } from '../router.js';
 import { renderBudgetList, renderGoals, renderInsights, budgetAlerts } from './budget.js';
 import { applyCardOrder, setReorderMode, currentOrder } from '../ui/cards.js';
 import { renderHomeHealth } from './wealth.js';
+import { iouHomeLine } from './iou.js';
 
 const ASSET = 'assets/mascot/sm/';
 let ctx = null;
@@ -124,6 +125,8 @@ function renderAccounts() {
   els.accountTotal.appendChild(el('span', {}, [document.createTextNode(t('home.total') + ': '), el('strong', { text: formatVND(tot.assets) })]));
   if (tot.liabilities) els.accountTotal.appendChild(el('span', {}, [document.createTextNode(t('home.liabilities') + ': '), el('strong', { text: formatVND(tot.liabilities) })]));
   els.accountTotal.appendChild(el('span', {}, [document.createTextNode(t('home.net') + ': '), el('strong', { text: formatVND(tot.net) })]));
+  const iouLine = iouHomeLine();
+  if (iouLine) els.accountTotal.appendChild(el('span', { className: 'iou-line' }, [el('a', { href: '#/budget?section=iou', text: '🤝 ' + iouLine })]));
 }
 
 function renderRecent() {

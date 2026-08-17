@@ -21,6 +21,8 @@ const SETTINGS_KEY = KEYS.V3_SETTINGS;
 
 const IDB_NAME = 'moneymoney';
 const IDB_STORE = 'kv';
+const IDB_BLOBS = 'blobs'; // P1d: ảnh hóa đơn (id → Blob)
+const IDB_VERSION = 2;
 
 let lastDataJSON = null;
 let lastSettingsJSON = null;
@@ -33,8 +35,12 @@ function idbOpen() {
   return new Promise((resolve, reject) => {
     if (typeof indexedDB === 'undefined') return resolve(null);
     let req;
-    try { req = indexedDB.open(IDB_NAME, 1); } catch (e) { return resolve(null); }
-    req.onupgradeneeded = () => { req.result.createObjectStore(IDB_STORE); };
+    try { req = indexedDB.open(IDB_NAME, IDB_VERSION); } catch (e) { return resolve(null); }
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+      if (!db.objectStoreNames.contains(IDB_BLOBS)) db.createObjectStore(IDB_BLOBS);
+    };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => resolve(null);
     req.onblocked = () => resolve(null);
@@ -64,6 +70,32 @@ async function idbSet(key, value) {
       tx.onabort = () => resolve(false);
     } catch { resolve(false); }
   });
+}
+
+// ---------- Blob (ảnh hóa đơn) ----------
+function blobTx(mode, fn) {
+  return idbOpen().then((db) => {
+    if (!db || !db.objectStoreNames.contains(IDB_BLOBS)) return undefined;
+    return new Promise((resolve) => {
+      try {
+        const tx = db.transaction(IDB_BLOBS, mode);
+        const store = tx.objectStore(IDB_BLOBS);
+        const r = fn(store);
+        if (mode === 'readonly') { r.onsuccess = () => resolve(r.result); r.onerror = () => resolve(undefined); }
+        else { tx.oncomplete = () => resolve(true); tx.onerror = () => resolve(false); tx.onabort = () => resolve(false); }
+      } catch { resolve(undefined); }
+    });
+  });
+}
+export const blobGet = (id) => blobTx('readonly', (st) => st.get(id));
+export const blobPut = (id, blob) => blobTx('readwrite', (st) => st.put(blob, id));
+export const blobDelete = (id) => blobTx('readwrite', (st) => st.delete(id));
+export const blobKeys = () => blobTx('readonly', (st) => st.getAllKeys()).then((k) => k || []);
+export const blobClear = () => blobTx('readwrite', (st) => st.clear());
+/** Tổng dung lượng ảnh (byte) — duyệt tất cả */
+export async function blobUsage() {
+  const all = await blobTx('readonly', (st) => st.getAll());
+  return { count: (all || []).length, bytes: (all || []).reduce((a, b) => a + (b && b.size ? b.size : 0), 0) };
 }
 
 // ---------- localStorage an toàn ----------

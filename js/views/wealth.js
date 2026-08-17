@@ -57,7 +57,8 @@ export function debtOverview() {
 }
 
 export function netWorthNow(debtBalances) {
-  return computeNetWorth({ accounts: S.getAccounts(), balances: S.getBalances(), assets: S.getAssets(), debtBalances: debtBalances || debtOverview().balances });
+  const iou = S.getIouSummary();
+  return computeNetWorth({ accounts: S.getAccounts(), balances: S.getBalances(), assets: S.getAssets(), debtBalances: debtBalances || debtOverview().balances, iou: { receivable: iou.receivable, payable: iou.payable, receivableLabel: t('iou.receivable'), payableLabel: t('iou.payable') } });
 }
 
 /** Điểm sức khỏe + streak + huy hiệu hiện tại (tính từ dữ liệu thật) */
@@ -341,8 +342,8 @@ function renderNetWorth() {
   sum.appendChild(el('div', { className: 'kpi' }, [el('h4', { text: t('nw.net') }), el('div', { className: 'val' + (nw.net < 0 ? ' out' : ''), text: formatVND(nw.net, { withUnit: false }) })]));
   for (const it of nw.items) {
     const asset = it.kind === 'asset' || it.kind === 'liability' ? S.getAssets().find((a) => a.name === it.name && (a.liability ? -a.value : a.value) === it.value) : null;
-    const icon = it.kind === 'account' ? (ACCOUNT_ICONS[it.type] || '💵') : it.kind === 'debt' ? '🏦' : (ASSET_ICONS[it.type] || '📦');
-    const sub = it.kind === 'account' ? t('nw.kindAccount') : it.kind === 'debt' ? t('nw.kindDebt') : `${t('nw.type.' + it.type)}${asset ? ' · ' + t('nw.updated', { date: dateLabel(toLocalYMD(asset.updatedAt)) }) : ''}`;
+    const icon = it.kind === 'account' ? (ACCOUNT_ICONS[it.type] || '💵') : it.kind === 'debt' ? '🏦' : it.kind === 'iou' ? '🤝' : (ASSET_ICONS[it.type] || '📦');
+    const sub = it.kind === 'account' ? t('nw.kindAccount') : it.kind === 'debt' ? t('nw.kindDebt') : it.kind === 'iou' ? t('nw.kindIou') : `${t('nw.type.' + it.type)}${asset ? ' · ' + t('nw.updated', { date: dateLabel(toLocalYMD(asset.updatedAt)) }) : ''}`;
     const row = el(asset ? 'button' : 'div', {
       className: 'mini-row', type: asset ? 'button' : undefined, attrs: { role: 'listitem' },
       on: asset ? { click: () => openAssetForm(asset) } : undefined,

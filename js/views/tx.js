@@ -13,10 +13,12 @@ import { confirmDialog } from '../ui/confirm.js';
 import { fillAccountSelect, fillCategorySelect, parseTags, refreshTagSuggest, refreshNoteSuggest, NEW_CATEGORY_VALUE } from '../ui/pickers.js';
 import { emptyFilter, isFilterEmpty, presetRange, applyFilter, summarize } from '../features/filters.js';
 import { uuid } from '../utils/id.js';
+import { mountReceiptPicker, saveReceipt } from '../ui/receipt.js';
 
 let ctx = null;
 let list = null;
 let amountCtl = null;
+let receiptPicker = null;
 let filter = { ...emptyFilter(), ...presetRange('thisMonth') };
 let activePreset = 'thisMonth';
 let lastFiltered = [];
@@ -28,6 +30,7 @@ export function initTx(c) {
     'fSearch', 'fToggle', 'fClear', 'fAdvanced', 'fFrom', 'fTo', 'fType', 'fAccount', 'fCategory', 'fTag', 'fMin', 'fMax', 'fSaved', 'fSave', 'fDelete', 'fSummary',
     'listViewport', 'listCanvas', 'emptyState', 'exportCSV']) els[id] = $('#' + id);
   amountCtl = bindAmountInput(els.amount, els.amountHint);
+  receiptPicker = mountReceiptPicker($('#qReceipt'));
   els.txDate.value = toLocalYMD();
 
   list = createVirtualList(els.listViewport, els.listCanvas, { onEdit: ctx.editFlow, onDelete: ctx.deleteFlow, ctx: { getCategory: S.getCategoryById, getAccount: S.getAccountById, version: () => ctx.version() } });
@@ -117,9 +120,13 @@ async function addFlow(e) {
     if (!els.qCategory.value || els.qCategory.value === NEW_CATEGORY_VALUE) return fail(t('tx.errCategory'), els.qCategory);
     input.categoryId = els.qCategory.value;
   }
+  const rs = receiptPicker ? receiptPicker.getState() : { blob: null };
+  input.id = uuid();
+  if (rs.blob) { input.receiptId = input.id; await saveReceipt(input.id, rs.blob); }
   await S.addTransaction(input);
   await S.updateSettings({ lastCategoryId: input.categoryId || S.getSettings().lastCategoryId, lastAccountId: accountId }, { silent: true });
   amountCtl.clear(); els.note.value = ''; els.qTags.value = '';
+  if (receiptPicker) receiptPicker.reset();
   $$('[aria-invalid]', els.addForm).forEach((n) => n.removeAttribute('aria-invalid'));
   // đảm bảo giao dịch mới nằm trong bộ lọc đang xem
   if ((filter.from && date < filter.from) || (filter.to && date > filter.to)) setPreset('all', true); else ctx.refresh('data');
@@ -129,6 +136,7 @@ async function addFlow(e) {
 }
 function resetForm() {
   amountCtl.clear(); els.note.value = ''; els.qTags.value = ''; els.formError.textContent = ''; els.txDate.value = toLocalYMD();
+  if (receiptPicker) receiptPicker.reset();
   $$('[aria-invalid]', els.addForm).forEach((n) => n.removeAttribute('aria-invalid'));
   els.amount.focus();
 }

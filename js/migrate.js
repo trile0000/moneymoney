@@ -4,7 +4,7 @@
 // v2 (mm_data_v2): { schemaVersion: 2, transactions, meta, savedAt } — date local, source/periodKey, uuid
 // v3 (mm_data_v3): + accounts, categories (2 cấp), recurring (tổng quát), tags, transfer, và các slice P1b/P1c (budgets, goals, debts, assets, snapshots)
 //    giao dịch: { id, type: 'income'|'expense'|'transfer', amount, category (tên), categoryId, accountId, toAccountId?, note, tags[],
-//                date, createdAt, updatedAt?, source: 'manual'|'recurring'|'import'|'auto-salary', recurringId?, periodKey?, receiptId?, debt?, deletedAt? }
+//                date, createdAt, updatedAt?, source: 'manual'|'recurring'|'import'|'auto-salary', recurringId?, periodKey?, receiptId?, debt? { kind lend|borrow|repay, person, refId? }, deletedAt? }
 
 import { uuid } from './utils/id.js';
 import { toLocalYMD, ymOf, isValidYMD, isValidYM } from './utils/date.js';
@@ -69,8 +69,9 @@ export function normalizeTransaction(t, { seenIds, now = Date.now(), defaultSour
   if (periodKey) out.periodKey = periodKey;
   if (t.recurringId) out.recurringId = String(t.recurringId);
   if (t.receiptId) out.receiptId = String(t.receiptId);
-  if (t.debt && typeof t.debt === 'object' && (t.debt.kind === 'lend' || t.debt.kind === 'borrow')) {
+  if (t.debt && typeof t.debt === 'object' && ['lend', 'borrow', 'repay'].includes(t.debt.kind)) {
     out.debt = { kind: t.debt.kind, person: String(t.debt.person || '').trim(), settledAt: Number(t.debt.settledAt) || null };
+    if (t.debt.refId) out.debt.refId = String(t.debt.refId);
   }
   if (Number.isFinite(Number(t.updatedAt))) out.updatedAt = Number(t.updatedAt);
   if (Number.isFinite(Number(t.deletedAt)) && Number(t.deletedAt) > 0) out.deletedAt = Number(t.deletedAt);
@@ -216,6 +217,7 @@ export function defaultSettings() {
     healthWeights: { savings: 25, emergency: 25, dti: 20, stability: 15, diversify: 15 },
     forecastMonths: 6,
     badges: [], // [{ key, at }]
+    onboarded: false, // P1d: đã qua onboarding (hoặc là người dùng cũ)
   };
 }
 

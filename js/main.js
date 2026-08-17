@@ -1,11 +1,11 @@
 // Điểm vào ứng dụng (v2.1 / P1a): boot, router, luồng dùng chung (thêm/sửa/xóa/undo/nhập/xuất/xóa tất cả), theme, i18n, SW.
 import { APP_VERSION } from './version.js';
-import { loadAll, onStorageEvent } from './storage.js';
+import { loadAll, onStorageEvent, blobGet, blobPut, blobDelete, blobClear, blobUsage } from './storage.js';
 import * as S from './state.js';
 import { $, el } from './utils/dom.js';
 import { formatVND } from './utils/money.js';
 import { toLocalYMD } from './utils/date.js';
-import { transactionsToCSV, backupToJSON, downloadText, parseTransactionsCSV, dedupeAgainst, parseBackupJSON } from './features/importExport.js';
+import { transactionsToCSV, backupToJSON, downloadText, parseTransactionsCSV, dedupeAgainst, parseBackupJSON, dataUrlToBlob, blobToDataUrl } from './features/importExport.js';
 import { pathName } from './features/categories.js';
 import { t, setLocale, applyI18n, getLocale } from './i18n.js';
 import { applyTheme, nextTheme, onThemeChange } from './ui/theme.js';
@@ -19,6 +19,8 @@ import { initHome, renderHome, resetAchievementState } from './views/home.js';
 import { initTx, renderTx } from './views/tx.js';
 import { initBudget, renderBudget } from './views/budget.js';
 import { initWealth, renderWealth, snapshotNow, healthSummary, syncBadges } from './views/wealth.js';
+import { initIou, renderIou } from './views/iou.js';
+import { shouldOnboard, runOnboarding } from './ui/onboarding.js';
 import { initSettings, renderSettings, openCategoryForm, openAccountForm, openRuleForm } from './views/settings.js';
 
 let version = 0; // tăng mỗi lần dữ liệu đổi (để virtual list biết cần dựng lại dòng)
@@ -52,9 +54,10 @@ const ctx = {
   initTx(ctx);
   initBudget(ctx);
   initWealth(ctx);
+  initIou(ctx);
   initSettings(ctx);
   initUndo({
-    onCommit: async (ids) => { await S.purgeDeleted(ids); },
+    onCommit: async (ids) => { for (const id of ids) { const tx = S.getById(id); if (tx && tx.receiptId) await blobDelete(tx.receiptId); } await S.purgeDeleted(ids); },
     onUndo: async (ids) => { for (const id of ids) await S.restore(id); refresh('data'); showToast(t('undo.done')); },
   });
   bindGlobal();
@@ -66,12 +69,14 @@ const ctx = {
 
   onView('home', (p, info) => { if (info.changed || dirty.home) { renderHome(info.changed && !dirty.home ? 'chart' : 'init'); dirty.home = false; } });
   onView('tx', (p, info) => { renderTx(info.changed ? p : {}); dirty.tx = false; });
-  onView('budget', (p, info) => { renderBudget(); renderWealth(info.changed ? p : {}); dirty.budget = false; });
+  onView('budget', (p, info) => { renderBudget(); renderIou(); renderWealth(info.changed ? p : {}); dirty.budget = false; });
   onView('settings', (p, info) => { renderSettings(info.changed ? p : {}); dirty.settings = false; });
   startRouter();
   registerSW();
 
   afterDataChange();
+  if (shouldOnboard(settings, data)) setTimeout(() => runOnboarding(ctx), 400);
+  else if (!settings.onboarded) S.updateSettings({ onboarded: true }, { silent: true });
   if (migrated && fromVersion === 1) showToast(t('toast.migratedV1', { n: data.transactions.length }), { duration: 6000 });
   else if (migrated && fromVersion === 2) showToast(t('toast.migratedV2', { acc: (data.accounts[0] || {}).name || 'Tiền mặt', c: data.categories.length }), { duration: 7000 });
   if (source === 'indexedDB') showToast(t('toast.recovered'), { kind: 'warn', duration: 5000 });
@@ -89,7 +94,7 @@ function refresh(reason = 'data') {
   const v = currentView();
   if (v === 'home') { renderHome(reason === 'theme' ? 'chart' : reason); dirty.home = false; }
   else if (v === 'tx') { renderTx(); dirty.tx = false; }
-  else if (v === 'budget') { renderBudget(); renderWealth(); dirty.budget = false; }
+  else if (v === 'budget') { renderBudget(); renderIou(); renderWealth(); dirty.budget = false; }
   else if (v === 'settings') { renderSettings(); dirty.settings = false; }
   if (reason === 'data') afterDataChange();
 }
@@ -137,9 +142,25 @@ function doExportCSV(items, tag = 'tatca') {
   downloadText(transactionsToCSV(items, csvCtx()), `moneymoney-${tag}-${toLocalYMD()}.csv`, 'text/csv;charset=utf-8;');
   showToast(t('data.exported', { n: items.length }));
 }
-function doBackup() {
-  downloadText(backupToJSON(S.getData(), S.getSettings()), `moneymoney-backup-${toLocalYMD()}.json`, 'application/json;charset=utf-8');
+async function doBackup() {
+  let receipts = null;
+  const withIds = S.getVisible().filter((x) => x.receiptId);
+  if (withIds.length) {
+    const u = await blobUsage();
+    const r = await confirmDialog({ title: t('data.backupReceiptsTitle'), body: t('data.backupReceiptsBody', { n: withIds.length, mb: (u.bytes / 1048576).toFixed(1) }), okText: t('data.backupWith'), okClass: 'primary', extraText: t('data.backupWithout'), extraResolves: true });
+    if (!r) return;
+    if (r === true) {
+      receipts = [];
+      for (const x of withIds) { const b = await blobGet(x.receiptId); if (b) receipts.push({ id: x.receiptId, dataUrl: await blobToDataUrl(b) }); }
+    }
+  }
+  downloadText(backupToJSON(S.getData(), S.getSettings(), { receipts }), `moneymoney-backup-${toLocalYMD()}.json`, 'application/json;charset=utf-8');
   showToast(t('data.backupDone'));
+}
+async function restoreReceipts(list, onlyIds = null) {
+  let n = 0;
+  for (const r of list || []) { if (onlyIds && !onlyIds.has(r.id)) continue; const b = dataUrlToBlob(r.dataUrl); if (b && (await blobPut(r.id, b)) !== false) n++; }
+  return n;
 }
 function pickFile(inputEl) {
   return new Promise((resolve) => {
@@ -202,13 +223,16 @@ async function restoreJSONFlow() {
     const items = parsed.transactions.map((x) => ({ ...x, accountId: accMap.get(x.accountId) || S.getSettings().defaultAccountId, toAccountId: x.toAccountId ? accMap.get(x.toAccountId) : undefined, categoryId: x.categoryId ? catMap.get(x.categoryId) : undefined }));
     const { fresh, dupes } = dedupeAgainst(items, S.getAllRaw());
     const n = await S.addMany(fresh, { source: 'import' });
+    await restoreReceipts(parsed.receipts, new Set(fresh.map((x) => x.receiptId).filter(Boolean)));
     refresh('data');
     showToast(t('data.merged', { n, d: dupes }));
     return;
   }
   if (!ok) return;
   commitUndo();
+  await blobClear();
   await S.replaceData(parsed.data);
+  await restoreReceipts(parsed.receipts);
   if (parsed.settings) await S.updateSettings(parsed.settings, { silent: true });
   setLocale(S.getSettings().locale); applyI18n(); applyTheme(S.getSettings().theme);
   resetAchievementState();
@@ -224,6 +248,7 @@ async function clearAllFlow() {
   if (!step2) return;
   commitUndo();
   await S.clearAllTransactions();
+  await blobClear();
   resetAchievementState();
   refresh('data');
   showToast(t('clear.done'));

@@ -44,6 +44,8 @@ export function createVirtualList(viewport, canvas, { onEdit, onDelete, ctx = {}
       el('div', { className: 'cat' }, [
         document.createTextNode(title),
         badge ? el('span', { className: 'badge', text: badge }) : null,
+        t.receiptId ? el('span', { className: 'badge', text: '📎', attrs: { title: tr('receipt.has'), 'aria-label': tr('receipt.has') } }) : null,
+        t.debt ? el('span', { className: 'badge', text: '🤝 ' + (t.debt.person || '') }) : null,
       ]),
       subBits.length ? el('div', { className: 'note', text: subBits.join(' · ') }) : null,
     ]);
@@ -108,7 +110,7 @@ export function createVirtualList(viewport, canvas, { onEdit, onDelete, ctx = {}
       if (cur !== row) canvas.insertBefore(row, cur || null);
     }
   }
-  function sig(t) { return `${t.type}|${t.amount}|${t.categoryId}|${t.category}|${t.accountId}|${t.toAccountId}|${t.note}|${(t.tags || []).join(',')}|${t.date}|${t.source}|${t.updatedAt || 0}|${ctx.version ? ctx.version() : 0}`; }
+  function sig(t) { return `${t.type}|${t.amount}|${t.categoryId}|${t.category}|${t.accountId}|${t.toAccountId}|${t.note}|${(t.tags || []).join(',')}|${t.date}|${t.source}|${t.updatedAt || 0}|${t.receiptId || ''}|${t.debt ? t.debt.person : ''}|${ctx.version ? ctx.version() : 0}`; }
 
   function schedule(force) {
     if (force) { if (raf) cancelAnimationFrame(raf); raf = 0; render(true); return; }
