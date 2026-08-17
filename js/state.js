@@ -8,6 +8,8 @@ import { makeCategory, buildTree, byId as catById, mergeCategory as mergeCat, de
 import { makeRule, runRecurring, nextOccurrence } from './features/recurring.js';
 import { makeBudget } from './features/budgets.js';
 import { makeGoal } from './features/goals.js';
+import { makeDebt } from './features/debts.js';
+import { makeAsset, upsertSnapshot } from './features/networth.js';
 
 const state = {
   data: null,
@@ -386,4 +388,52 @@ export async function removeContribution(goalId, cid) {
   const g = getGoalById(goalId);
   if (!g) return null;
   return updateGoal(goalId, { contributions: g.contributions.filter((c) => c.id !== cid) });
+}
+
+// ---------- Nợ ----------
+export function getDebts() { return state.data.debts; }
+export function getDebtById(id) { return state.data.debts.find((d) => d.id === id); }
+export async function addDebt(partial) { const d = makeDebt(partial); state.data.debts.push(d); await persist({ type: 'debts' }); return d; }
+export async function updateDebt(id, patch) {
+  const i = state.data.debts.findIndex((d) => d.id === id);
+  if (i < 0) return null;
+  const d = makeDebt({ ...state.data.debts[i], ...patch, id });
+  state.data.debts[i] = d;
+  await persist({ type: 'debts' });
+  return d;
+}
+export async function removeDebt(id) { state.data.debts = state.data.debts.filter((d) => d.id !== id); await persist({ type: 'debts' }); }
+export async function addDebtExtraPayment(id, { date, amount }) {
+  const d = getDebtById(id);
+  if (!d) return null;
+  return updateDebt(id, { extraPayments: [...d.extraPayments, { id: uuid(), date: date || toLocalYMD(), amount: Math.round(Number(amount) || 0) }] });
+}
+export async function removeDebtExtraPayment(id, eid) {
+  const d = getDebtById(id);
+  if (!d) return null;
+  return updateDebt(id, { extraPayments: d.extraPayments.filter((x) => x.id !== eid) });
+}
+
+// ---------- Tài sản & snapshot ----------
+export function getAssets() { return state.data.assets; }
+export function getAssetById(id) { return state.data.assets.find((a) => a.id === id); }
+export async function addAsset(partial) { const a = makeAsset({ ...partial, updatedAt: Date.now() }); state.data.assets.push(a); await persist({ type: 'assets' }); return a; }
+export async function updateAsset(id, patch) {
+  const i = state.data.assets.findIndex((a) => a.id === id);
+  if (i < 0) return null;
+  const a = makeAsset({ ...state.data.assets[i], ...patch, id, updatedAt: Date.now() });
+  state.data.assets[i] = a;
+  await persist({ type: 'assets' });
+  return a;
+}
+export async function removeAsset(id) { state.data.assets = state.data.assets.filter((a) => a.id !== id); await persist({ type: 'assets' }); }
+export function getSnapshots() { return (state.data.snapshots && state.data.snapshots.networth) || []; }
+export async function saveSnapshot(ym, { assets, liabilities }) {
+  const cur = getSnapshots();
+  const next = upsertSnapshot(cur, ym, { assets, liabilities });
+  const prev = cur.find((s) => s.ym === ym);
+  if (prev && prev.assets === Math.round(assets) && prev.liabilities === Math.round(liabilities)) return false;
+  state.data.snapshots = { ...(state.data.snapshots || {}), networth: next };
+  await saveData(state.data);
+  return true;
 }

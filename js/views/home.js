@@ -13,6 +13,7 @@ import { showToast } from '../ui/toast.js';
 import { navigate } from '../router.js';
 import { renderBudgetList, renderGoals, renderInsights, budgetAlerts } from './budget.js';
 import { applyCardOrder, setReorderMode, currentOrder } from '../ui/cards.js';
+import { renderHomeHealth } from './wealth.js';
 
 const ASSET = 'assets/mascot/sm/';
 let ctx = null;
@@ -22,7 +23,7 @@ let lastMascotPick = null;
 
 export function initHome(c) {
   ctx = c;
-  for (const id of ['filterMonth', 'thisMonth', 'txCount', 'mascotBalance', 'balanceStatus', 'sumIncome', 'sumExpense', 'sumBalance', 'accountList', 'accountTotal', 'creditWarnings', 'quickTransfer', 'chart', 'chartMode', 'chartType', 'chartScope', 'mascotChart', 'recentList', 'recentEmpty', 'upcomingList', 'upcomingEmpty']) els[id] = $('#' + id);
+  for (const id of ['filterMonth', 'thisMonth', 'txCount', 'mascotBalance', 'balanceStatus', 'sumIncome', 'sumExpense', 'sumBalance', 'accountList', 'accountTotal', 'creditWarnings', 'quickTransfer', 'chart', 'chartMode', 'chartType', 'chartScope', 'mascotChart', 'recentList', 'recentEmpty', 'upcomingList', 'upcomingEmpty', 'heatmap']) els[id] = $('#' + id);
   els.filterMonth.value = toLocalYM();
   els.filterMonth.addEventListener('change', () => renderHome('filter'));
   els.thisMonth.addEventListener('click', () => { els.filterMonth.value = toLocalYM(); renderHome('filter'); });
@@ -66,7 +67,8 @@ export function renderHome(reason = 'data') {
   els.mascotBalance.src = ASSET + pick.file + '.webp';
   els.balanceStatus.className = 'status-bar status--' + pick.status;
   els.balanceStatus.textContent = tierMessage(tier, balance, settings.messages, formatVND);
-  els.mascotChart.src = ASSET + (els.chartMode.value === 'byCategory' ? 'tiger_spending' : 'tiger_income') + '.webp';
+  els.mascotChart.src = ASSET + (['byCategory', 'heatmap', 'compare'].includes(els.chartMode.value) ? 'tiger_spending' : 'tiger_income') + '.webp';
+  els.chartType.disabled = els.chartMode.value === 'heatmap';
 
   if (reason === 'init' || reason === 'data' || reason === 'settings') {
     const cur = S.getMonth(toLocalYM());
@@ -77,8 +79,8 @@ export function renderHome(reason = 'data') {
     prevCurrentTier = curTier;
   }
 
-  renderChart({ canvas: els.chart, scopeEl: els.chartScope, mode: els.chartMode.value, type: els.chartType.value, monthKey: key, month: m, monthIndex: S.getMonthIndex(), categoryOf: S.getCategoryById });
-  if (reason !== 'chart' && reason !== 'filter') { renderAccounts(); renderRecent(); renderUpcoming(); renderHomeBudgets(); renderInsights($('#insightList'), $('#insightEmpty'), toLocalYM(), 3); renderGoals($('#homeGoalList'), $('#homeGoalEmpty'), { compact: true, limit: 3 }); }
+  renderChart({ canvas: els.chart, scopeEl: els.chartScope, heatmapEl: els.heatmap, mode: els.chartMode.value, type: els.chartType.value, monthKey: key, month: m, monthIndex: S.getMonthIndex(), categoryOf: S.getCategoryById });
+  if (reason !== 'chart' && reason !== 'filter') { renderAccounts(); renderRecent(); renderUpcoming(); renderHomeBudgets(); renderInsights($('#insightList'), $('#insightEmpty'), toLocalYM(), 3); renderGoals($('#homeGoalList'), $('#homeGoalEmpty'), { compact: true, limit: 3 }); renderHomeHealth(); }
 }
 
 function renderHomeBudgets() {

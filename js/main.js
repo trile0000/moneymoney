@@ -18,6 +18,7 @@ import { startRouter, onView, navigate, currentView } from './router.js';
 import { initHome, renderHome, resetAchievementState } from './views/home.js';
 import { initTx, renderTx } from './views/tx.js';
 import { initBudget, renderBudget } from './views/budget.js';
+import { initWealth, renderWealth, snapshotNow, healthSummary, syncBadges } from './views/wealth.js';
 import { initSettings, renderSettings, openCategoryForm, openAccountForm, openRuleForm } from './views/settings.js';
 
 let version = 0; // tăng mỗi lần dữ liệu đổi (để virtual list biết cần dựng lại dòng)
@@ -50,6 +51,7 @@ const ctx = {
   initHome(ctx);
   initTx(ctx);
   initBudget(ctx);
+  initWealth(ctx);
   initSettings(ctx);
   initUndo({
     onCommit: async (ids) => { await S.purgeDeleted(ids); },
@@ -64,11 +66,12 @@ const ctx = {
 
   onView('home', (p, info) => { if (info.changed || dirty.home) { renderHome(info.changed && !dirty.home ? 'chart' : 'init'); dirty.home = false; } });
   onView('tx', (p, info) => { renderTx(info.changed ? p : {}); dirty.tx = false; });
-  onView('budget', () => { renderBudget(); dirty.budget = false; });
+  onView('budget', (p, info) => { renderBudget(); renderWealth(info.changed ? p : {}); dirty.budget = false; });
   onView('settings', (p, info) => { renderSettings(info.changed ? p : {}); dirty.settings = false; });
   startRouter();
   registerSW();
 
+  afterDataChange();
   if (migrated && fromVersion === 1) showToast(t('toast.migratedV1', { n: data.transactions.length }), { duration: 6000 });
   else if (migrated && fromVersion === 2) showToast(t('toast.migratedV2', { acc: (data.accounts[0] || {}).name || 'Tiền mặt', c: data.categories.length }), { duration: 7000 });
   if (source === 'indexedDB') showToast(t('toast.recovered'), { kind: 'warn', duration: 5000 });
@@ -86,8 +89,18 @@ function refresh(reason = 'data') {
   const v = currentView();
   if (v === 'home') { renderHome(reason === 'theme' ? 'chart' : reason); dirty.home = false; }
   else if (v === 'tx') { renderTx(); dirty.tx = false; }
-  else if (v === 'budget') { renderBudget(); dirty.budget = false; }
+  else if (v === 'budget') { renderBudget(); renderWealth(); dirty.budget = false; }
   else if (v === 'settings') { renderSettings(); dirty.settings = false; }
+  if (reason === 'data') afterDataChange();
+}
+
+/** P1c: sau khi dữ liệu đổi — lưu snapshot tài sản ròng tháng này & kiểm tra huy hiệu mới (không chặn UI) */
+let afterTimer = 0;
+function afterDataChange() {
+  clearTimeout(afterTimer);
+  afterTimer = setTimeout(async () => {
+    try { await snapshotNow(); await syncBadges(healthSummary().badges); } catch (e) { console.error(e); }
+  }, 300);
 }
 
 // ---------- CRUD flows dùng chung ----------

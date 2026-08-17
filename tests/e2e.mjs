@@ -188,7 +188,49 @@ const s3b = await ls('mm_settings_v3');
 check('Quỹ khẩn cấp: lưu ví + tiền ngoài app + mục tiêu 3 tháng', s3b.emergencyMonths === 3 && s3b.emergencyAccountIds.includes(bank.id) && s3b.emergencyExtra === 20000000);
 check('Quỹ khẩn cấp hiển thị số tiền quỹ (27tr = 7tr ví + 20tr ngoài)', (await page.textContent('#efBody')).includes('27.000.000'));
 check('Insight có nội dung', (await page.evaluate(() => document.querySelectorAll('#insightListFull .insight').length)) >= 1);
+
+// 8b) P1c: nợ, tài sản ròng, dự báo, sức khỏe, huy hiệu, biểu đồ mới
+await page.click('#addDebt'); await page.waitForSelector('#formSheet.open');
+await page.fill('#fs_name', 'Vay mua xe'); await page.fill('#fs_principal', '120tr'); await page.fill('#fs_rate', '12'); await page.fill('#fs_termMonths', '24');
+await page.fill('#fs_startDate', `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`); await page.fill('#fs_paymentDay', '5'); await page.click('#fsSave'); await sleep(400);
+d3 = await ls('mm_data_v3');
+const debtRow = await page.evaluate(() => { const r = document.querySelector('#debtList .debt-row'); return r ? r.textContent : ''; });
+check('Khoản nợ 120tr/12%/24 kỳ được lưu và hiển thị', d3.debts.length === 1 && d3.debts[0].principal === 120000000 && debtRow.includes('Vay mua xe') && debtRow.includes('Còn nợ'), debtRow.replace(/\s+/g, ' ').slice(0, 120));
+check('Chiến lược snowball/avalanche hiển thị 2 dòng', (await page.evaluate(() => document.querySelectorAll('#debtStrategy .strategy-row').length)) === 2);
+await page.click('#debtList .debt-row .row-actions .btn'); await page.waitForSelector('#formSheet.open'); await sleep(200);
+const schedRows = await page.evaluate(() => document.querySelectorAll('#formSheet .sched tbody tr').length);
+await page.fill('#fs_extra', '1tr'); await sleep(200);
+const prepayTxt = await page.evaluate(() => (document.querySelector('#formSheet .note-box') || {}).textContent || '');
+check('Lịch trả nợ 24 kỳ + mô phỏng trả thêm 1tr/tháng', schedRows === 24 && prepayTxt.includes('xong sớm') && prepayTxt.includes('tiết kiệm'), `rows=${schedRows} ${prepayTxt.slice(0, 80)}`);
+await page.click('#fsSave'); await sleep(200);
+await page.click('#debtList .debt-row .row-actions .btn:nth-of-type(2)'); await page.waitForSelector('#formSheet.open');
+await page.fill('#fs_amount', '10tr'); await page.click('#fsSave'); await sleep(400);
+d3 = await ls('mm_data_v3');
+check('Trả thêm 10tr được ghi vào khoản nợ', d3.debts[0].extraPayments.length === 1 && d3.debts[0].extraPayments[0].amount === 10000000);
+await page.click('#addAsset'); await page.waitForSelector('#formSheet.open');
+await page.fill('#fs_name', 'Sổ tiết kiệm'); await page.selectOption('#fs_type', 'savings'); await page.fill('#fs_value', '50tr'); await page.click('#fsSave'); await sleep(400);
+d3 = await ls('mm_data_v3');
+const nwTxt = await page.textContent('#nwSummary');
+check('Tài sản 50tr được lưu; tổng tài sản ròng có Tài sản/Nợ/Ròng', d3.assets.length === 1 && d3.assets[0].value === 50000000 && nwTxt.includes('Tài sản') && nwTxt.includes('Nợ') && nwTxt.includes('Ròng'), nwTxt.replace(/\s+/g, ' '));
+check('Snapshot tài sản ròng tháng này đã lưu', ((d3.snapshots || {}).networth || []).some((x) => x.ym === todayYM), JSON.stringify((d3.snapshots || {}).networth));
+check('Danh sách tài sản ròng có ví + tài sản + khoản nợ', await page.evaluate(() => { const t = document.getElementById('nwItems').textContent; return t.includes('Sổ tiết kiệm') && t.includes('Vay mua xe') && t.includes('Tiền mặt'); }));
+await page.selectOption('#fcMonths', '3'); await sleep(300);
+check('Dự báo 3 tháng: 3 dòng + giả định + lưu forecastMonths', (await page.evaluate(() => document.querySelectorAll('#fcBody tbody tr').length)) === 3 && (await page.textContent('#fcAssume')).includes('Giả định') && (await ls('mm_settings_v3')).forecastMonths === 3);
+const healthTxt = await page.textContent('#healthBody');
+check('Điểm sức khỏe: vòng điểm + 5 thành phần + tên tier', /\d+\/100/.test(healthTxt) && (await page.evaluate(() => document.querySelectorAll('#healthBody .health-row').length)) === 5 && healthTxt.includes('Tier'), healthTxt.replace(/\s+/g, ' ').slice(0, 100));
+await page.click('#editHealth'); await page.waitForSelector('#formSheet.open');
+await page.fill('#fs_savings', '40'); await page.click('#fsSave'); await sleep(300);
+check('Lưu trọng số điểm sức khỏe (savings=40)', (await ls('mm_settings_v3')).healthWeights.savings === 40);
+const badgesSaved = (await ls('mm_settings_v3')).badges || [];
+check('Huy hiệu đã mở khóa lưu trong settings (first_tx, first_budget)', badgesSaved.includes('first_tx') && badgesSaved.includes('first_budget'), JSON.stringify(badgesSaved));
 await goto('#/home'); await sleep(300);
+check('Trang chủ: thẻ sức khỏe có điểm, chuỗi và huy hiệu', (await page.evaluate(() => !!document.querySelector('#homeHealth .score-num') && document.querySelectorAll('#homeBadges .badge-chip.on').length >= 2)));
+for (const [mode, expectText] of [['cashflow', 'tích lũy'], ['compare', 'so với'], ['heatmap', 'ô càng đậm']]) {
+  await page.selectOption('#chartMode', mode); await sleep(250);
+  const info = await page.evaluate(() => ({ scope: document.getElementById('chartScope').textContent, hm: !document.getElementById('heatmap').hidden, cells: document.querySelectorAll('#heatmap .hm-cell').length, canvasHidden: document.getElementById('chart').hidden }));
+  check(`Biểu đồ ${mode}: phạm vi đúng${mode === 'heatmap' ? ', lưới ngày hiện, canvas ẩn' : ''}`, info.scope.includes(expectText) && (mode !== 'heatmap' ? !info.hm && !info.canvasHidden : info.hm && info.cells >= 28 && info.canvasHidden), JSON.stringify(info));
+}
+await page.selectOption('#chartMode', 'byCategory'); await sleep(200);
 check('Trang chủ: thẻ ngân sách + cảnh báo vượt', (await page.textContent('#homeBudgetList')).includes('Ăn uống') && (await page.evaluate(() => document.querySelectorAll('#homeBudgetList .warn-item').length)) >= 1);
 check('Trang chủ: thẻ mục tiêu', (await page.textContent('#homeGoalList')).includes('Mua xe'));
 // sắp xếp thẻ: đưa thẻ đầu tiên xuống, kiểm tra lưu thứ tự
@@ -196,7 +238,7 @@ await page.click('#reorderCards'); await sleep(100);
 const firstBefore = await page.evaluate(() => document.querySelector('#homeGrid [data-card]').dataset.card);
 await page.click('#homeGrid [data-card] .card-reorder button:nth-of-type(2)'); await sleep(200);
 const orderSaved = (await ls('mm_settings_v3')).cardOrder;
-check('Sắp xếp thẻ: thẻ đầu tiên chuyển xuống và lưu cardOrder', orderSaved.length === 8 && orderSaved[1] === firstBefore, JSON.stringify(orderSaved));
+check('Sắp xếp thẻ: thẻ đầu tiên chuyển xuống và lưu cardOrder', orderSaved.length === 9 && orderSaved[1] === firstBefore, JSON.stringify(orderSaved));
 await page.click('#reorderCards'); await sleep(100);
 await page.reload(); await page.waitForFunction(() => window.__mm && document.querySelectorAll('#accountList .acc-row').length > 0); await sleep(300);
 check('Reload giữ thứ tự thẻ', (await page.evaluate(() => document.querySelector('#homeGrid [data-card]').dataset.card)) === orderSaved[0]);
@@ -233,7 +275,7 @@ check('CSV có BOM + cột account/tags', csv.charCodeAt(0) === 0xfeff && csv.sp
 await page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller, null, { timeout: 15000 }).catch(() => {});
 await sleep(1500);
 const sw = await page.evaluate(async () => { const keys = await caches.keys(); const c = await caches.open(keys.find((k) => k.startsWith('mm-')) || 'x'); return { controller: !!navigator.serviceWorker.controller, cached: (await c.keys()).length, keys }; });
-check('SW controlling & precache đủ (>= 58 file)', sw.controller && sw.cached >= 58, JSON.stringify(sw));
+check('SW controlling & precache đủ (>= 65 file)', sw.controller && sw.cached >= 65, JSON.stringify(sw));
 await goto('#/home');
 await ctx.setOffline(true);
 await page.reload().catch(() => {});

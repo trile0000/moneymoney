@@ -4,16 +4,17 @@ PWA quản lý thu chi cá nhân cho người dùng Việt Nam. **Static site**,
 
 🔗 https://trile0000.github.io/moneymoney/
 
-## Tính năng (bản 2.2.0 — P1b)
+## Tính năng (bản 2.3.0 — P1c)
 
 - **Nhiều ví/tài khoản** (tiền mặt, ngân hàng, ví điện tử, thẻ tín dụng có ngày sao kê/đến hạn), **chuyển khoản giữa ví**, số dư từng ví.
 - **Danh mục 2 cấp** có icon/màu/nhóm 50-30-20, **tag** tự do, **giao dịch định kỳ** tổng quát (ngày/tuần/tháng/năm, bù kỳ thiếu, bỏ qua 1 kỳ).
 - Thêm nhanh / **sửa (bottom sheet)** / **xóa có Hoàn tác 5 giây**; nhập số tiền gõ tắt `50k`, `1tr5`, `1.250.000` có xác nhận ngay dưới ô; nhớ danh mục/ví gần nhất, gợi ý ghi chú, lặp lại giao dịch.
 - **Tìm kiếm không dấu & lọc** (thời gian, loại, ví, danh mục, tag, khoảng tiền), bộ lọc đã lưu.
 - **Ngân sách theo danh mục** (80/100%, so TB 3 tháng), **quy tắc 50/30/20**, **quỹ khẩn cấp** 3/6/12 tháng, **mục tiêu tiết kiệm** (cần X/tháng), **insight tự động**; Trang chủ dạng thẻ sắp xếp được.
+- **Quản lý nợ** (lịch trả niên kim, trả thêm, snowball vs avalanche, mô phỏng trả sớm), **tài sản ròng** (ví + tài sản khai báo − nợ, snapshot hàng tháng), **dự báo dòng tiền 3–12 tháng**, **điểm sức khỏe tài chính 0–100** minh bạch (5 thành phần, trọng số tùy chỉnh), **streak & huy hiệu**.
 - **Tab dưới cùng**, **dark mode**, **song ngữ Việt/Anh**.
 - Tổng kết theo tháng, mascot hổ + 5 tier (ngưỡng & thông điệp tùy chỉnh), kỷ lục — chỉ tính cho tháng hiện tại.
-- Biểu đồ danh mục / thu-chi / biến động 12 tháng (Chart.js self-host), ghi rõ phạm vi dữ liệu.
+- Biểu đồ danh mục / thu-chi / biến động 12 tháng / dòng tiền tích lũy / so sánh tháng trước / heatmap chi theo ngày (Chart.js self-host), ghi rõ phạm vi dữ liệu.
 - **Lương định kỳ** tự sinh ngày 01, **bù đủ kỳ thiếu** dù không mở app đúng ngày.
 - **Xuất CSV** (RFC 4180, BOM UTF-8 — mở Excel tiếng Việt đúng), **Nhập CSV** (tự đoán cột, khử trùng), **Sao lưu / Khôi phục JSON**.
 - Danh sách ảo hóa — mượt với 10.000+ giao dịch. Accessibility: bàn phím, ARIA, bẫy focus, reduced-motion.
@@ -33,8 +34,8 @@ js/
   storage.js            localStorage + IndexedDB, quota, migration khi load
   migrate.js            schema v1 → v2 → v3 (thuần, có test)
   utils/                id (uuid), date (local YYYY-MM-DD), money (parser VND), csv (RFC 4180), dom (el/trapFocus)
-  features/             accounts, categories, recurring, filters, budgets, rule503020, emergencyFund, goals, insights, achievements, importExport
-  views/                home (thẻ sắp xếp được), tx (thêm nhanh + lọc + danh sách), budget (ngân sách/50-30-20/quỹ/mục tiêu/insight), settings
+  features/             accounts, categories, recurring, filters, budgets, rule503020, emergencyFund, goals, insights, achievements (tier/streak/huy hiệu), debts, networth, forecast, health, importExport
+  views/                home (thẻ sắp xếp được), tx (thêm nhanh + lọc + danh sách), budget (ngân sách/50-30-20/quỹ/mục tiêu/insight), wealth (sức khỏe/nợ/tài sản ròng/dự báo), settings
   ui/                   list (virtual), editSheet, formSheet, pickers, confirm, modal, undo, gestures, charts, amountInput, toast, confetti, theme, swUpdate
 service-worker.js       precache app shell, network-first HTML/JS/CSS, cache-first asset
 vendor/chart.umd.js     Chart.js 4.4.7 (MIT)
@@ -42,7 +43,7 @@ assets/fonts/           Baloo 2, Quicksand — woff2 subset Latin+Vietnamese (OF
 assets/mascot/sm/       mascot 192px webp/png dùng trong app (bản 1024px gốc giữ ở assets/mascot/)
 tests/                  unit test (node --test) + e2e.mjs (Playwright)
 docs/P0-review.md       xác nhận 27 lỗi P0 + lỗi bổ sung
-docs/P1-plan.md         kế hoạch P1 (P1a, P1b đã xong; P1c–P1d tiếp theo)
+docs/P1-plan.md         kế hoạch P1 (P1a–P1c đã xong; P1d tiếp theo)
 scripts/bump-version.mjs
 ```
 

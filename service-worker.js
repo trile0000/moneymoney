@@ -6,7 +6,7 @@
  * - Precache toàn bộ app shell kể cả Chart.js + font (self-host) → offline đầy đủ.
  * Đổi CACHE_VERSION mỗi lần deploy (node scripts/bump-version.mjs <version>).
  */
-const CACHE_VERSION = '2.2.0';
+const CACHE_VERSION = '2.3.0';
 const CACHE_NAME = `mm-${CACHE_VERSION}`;
 
 const PRECACHE = [
@@ -19,11 +19,15 @@ const PRECACHE = [
   './js/features/achievements.js',
   './js/features/budgets.js',
   './js/features/categories.js',
+  './js/features/debts.js',
   './js/features/emergencyFund.js',
   './js/features/filters.js',
+  './js/features/forecast.js',
   './js/features/goals.js',
+  './js/features/health.js',
   './js/features/importExport.js',
   './js/features/insights.js',
+  './js/features/networth.js',
   './js/features/recurring.js',
   './js/features/rule503020.js',
   './js/i18n.js',
@@ -57,6 +61,7 @@ const PRECACHE = [
   './js/views/home.js',
   './js/views/settings.js',
   './js/views/tx.js',
+  './js/views/wealth.js',
   './assets/fonts/Baloo2-latin-vi.woff2',
   './assets/fonts/Quicksand-latin-vi.woff2',
   './assets/mascot/sm/tiger_logo.webp',

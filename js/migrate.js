@@ -13,6 +13,8 @@ import { defaultAccountList, makeAccount } from './features/accounts.js';
 import { makeRule } from './features/recurring.js';
 import { makeBudget } from './features/budgets.js';
 import { makeGoal } from './features/goals.js';
+import { makeDebt } from './features/debts.js';
+import { makeAsset } from './features/networth.js';
 
 export const SCHEMA_VERSION = 3;
 export const LEGACY_SALARY_NOTE = 'Tự động thêm từ hệ thống';
@@ -118,7 +120,8 @@ export function migrate(raw, { settings: settingsIn, now = Date.now() } = {}) {
   data.recurring = src && Array.isArray(src.recurring) ? src.recurring.map((r) => makeRule(r)) : [];
   data.budgets = src && Array.isArray(src.budgets) ? src.budgets.map((b) => makeBudget(b)) : [];
   data.goals = src && Array.isArray(src.goals) ? src.goals.map((g) => makeGoal(g)) : [];
-  for (const k of ['debts', 'assets']) data[k] = src && Array.isArray(src[k]) ? src[k].slice() : [];
+  data.debts = src && Array.isArray(src.debts) ? src.debts.map((d) => makeDebt(d)) : [];
+  data.assets = src && Array.isArray(src.assets) ? src.assets.map((a) => makeAsset(a)) : [];
   data.snapshots = src && src.snapshots && typeof src.snapshots === 'object' ? { networth: [], ...src.snapshots } : { networth: [] };
 
   const defaultAccount = data.accounts.find((a) => a.id === settings.defaultAccountId && !a.archived) || data.accounts.find((a) => !a.archived) || data.accounts[0];
@@ -210,6 +213,9 @@ export function defaultSettings() {
     emergencyExtra: 0, // số tiền quỹ giữ ngoài app (sổ tiết kiệm…)
     savedFilters: [],
     cardOrder: [], // thứ tự thẻ trang chủ
+    healthWeights: { savings: 25, emergency: 25, dti: 20, stability: 15, diversify: 15 },
+    forecastMonths: 6,
+    badges: [], // [{ key, at }]
   };
 }
 
@@ -222,6 +228,7 @@ export function migrateSettings(raw) {
     thresholds: { ...d.thresholds, ...(raw.thresholds || {}) },
     messages: { ...d.messages, ...(raw.messages || {}) },
     rule503020: { ...d.rule503020, ...(raw.rule503020 || {}) },
+    healthWeights: { ...d.healthWeights, ...(raw.healthWeights || {}) },
     schemaVersion: SCHEMA_VERSION,
   };
   out.salary = Math.max(0, Number(out.salary) || 0);
@@ -237,6 +244,8 @@ export function migrateSettings(raw) {
   if (!Array.isArray(out.emergencyAccountIds)) out.emergencyAccountIds = [];
   if (!Array.isArray(out.cardOrder)) out.cardOrder = [];
   out.emergencyExtra = Math.max(0, Number(out.emergencyExtra) || 0);
+  if (!Array.isArray(out.badges)) out.badges = [];
+  out.forecastMonths = [3, 6, 12].includes(Number(out.forecastMonths)) ? Number(out.forecastMonths) : 6;
   out.emergencyMonths = [3, 6, 12].includes(Number(out.emergencyMonths)) ? Number(out.emergencyMonths) : 6;
   return out;
 }

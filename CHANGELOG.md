@@ -2,6 +2,21 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/vi/1.0.0/). Phiên bản = `APP_VERSION` = `CACHE_VERSION`.
 
+## [2.3.0] — 2026-08-17 — P1c: quản lý nợ, tài sản ròng, dự báo dòng tiền, điểm sức khỏe, streak & huy hiệu, biểu đồ mới
+
+### Thêm
+- **Quản lý nợ**: khoản vay/trả góp/dư nợ thẻ (gốc, lãi %/năm, kỳ hạn, ngày giải ngân, ngày trả) → **lịch trả nợ niên kim** đầy đủ (kỳ, ngày, trả, lãi, gốc, dư nợ), trạng thái tới hôm nay (còn nợ, đã trả, kỳ tới), **ghi khoản trả thêm** (rút ngắn lịch), mô phỏng "nếu trả thêm X/tháng → xong sớm N tháng, tiết kiệm Y lãi", so sánh **snowball vs avalanche** với ngân sách thêm mỗi tháng.
+- **Tài sản ròng**: ví trong app tự tính + khai báo tài sản/nợ ngoài app (tiết kiệm, cổ phiếu, quỹ/ETF, vàng, bất động sản, xe, crypto, khác) + dư nợ các khoản vay → Tài sản / Nợ / Ròng; **snapshot mỗi tháng** (tự lưu, chỉ ghi khi đổi) và biểu đồ 24 tháng.
+- **Dự báo dòng tiền 3/6/12 tháng**: thu/chi định kỳ + TB thu/chi khác 3 tháng gần nhất + trả nợ đến hạn; đánh dấu tháng dự báo âm; ghi rõ giả định.
+- **Điểm sức khỏe tài chính 0–100 minh bạch**: 5 thành phần (tỉ lệ tiết kiệm 25, quỹ khẩn cấp 25, DTI 20, độ ổn định chi tiêu 15, đa dạng hóa tài sản 15) — mỗi thành phần hiện giá trị thật, điểm đạt/trọng số và gợi ý cải thiện; **trọng số tùy chỉnh** (tự chuẩn hóa); tier sức khỏe 0–4 (Cần cấp cứu → Xuất sắc).
+- **Streak ghi chép** (chuỗi ngày liên tục có giao dịch tay, bỏ qua tự sinh) và **11 huy hiệu** (giao dịch đầu tiên, 100/1.000 giao dịch, chuỗi 7/30 ngày, ngân sách đầu tiên, hoàn thành mục tiêu, quỹ 3/6 tháng, sức khỏe ≥ 70, 3 tháng liên tiếp thu ≥ chi) — toast khi mở khóa, lưu trong cài đặt.
+- Thẻ **Điểm sức khỏe** ở Trang chủ (vòng điểm, 5 thanh, chuỗi, huy hiệu) → "Chi tiết" mở tab Ngân sách; các mục mới trong tab Ngân sách (`#/budget?section=health|debts|networth|forecast`).
+- **Biểu đồ mới**: dòng tiền tích lũy theo ngày trong tháng, so sánh chi theo danh mục gốc với tháng trước, **heatmap chi theo ngày** (lưới lịch, không cần Chart.js; có mô tả cho trình đọc màn hình).
+- Unit test cho lịch trả nợ / snowball–avalanche / trả sớm, tài sản ròng & snapshot & đa dạng hóa, dự báo, điểm sức khỏe & tier, streak & huy hiệu (93 test tổng); E2E bổ sung 15 kiểm tra; precache SW cập nhật (67 file).
+
+### Sửa
+- Streak bỏ qua giao dịch có thời điểm tạo trong tương lai (lệch giờ máy).
+
 ## [2.2.0] — 2026-08-17 — P1b: ngân sách, 50/30/20, quỹ khẩn cấp, mục tiêu tiết kiệm, insight, sắp xếp thẻ
 
 ### Thêm

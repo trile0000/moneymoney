@@ -66,6 +66,18 @@
             </div>
           </div>
 
+          <div class="card" data-card="health">
+            <div class="card-body">
+              <div class="card-head">
+                <h2 data-i18n="health.title">Điểm sức khỏe tài chính</h2>
+                <a href="#/budget?section=health" class="btn ghost small" data-i18n="health.detail">Chi tiết</a>
+              </div>
+              <div id="homeHealth" class="health-home"></div>
+              <div id="homeStreak" class="streak-row"></div>
+              <div id="homeBadges" class="badges"></div>
+            </div>
+          </div>
+
           <div class="card" data-card="accounts">
             <div class="card-body">
               <div class="card-head">
@@ -124,6 +136,9 @@
                   <option value="byCategory" data-i18n="chart.byCategory">Theo danh mục (Chi)</option>
                   <option value="totals" data-i18n="chart.totals">Tổng Thu vs Chi</option>
                   <option value="trend" data-i18n="chart.trend">Biến động theo tháng</option>
+                  <option value="cashflow" data-i18n="chart.cashflow">Dòng tiền tích lũy trong tháng</option>
+                  <option value="compare" data-i18n="chart.compare">So sánh với tháng trước</option>
+                  <option value="heatmap" data-i18n="chart.heatmap">Heatmap chi theo ngày</option>
                 </select>
                 <label for="chartType" class="sr-only" data-i18n="home.chartType">Kiểu biểu đồ</label>
                 <select id="chartType">
@@ -132,7 +147,7 @@
                   <option value="line" data-i18n="chart.line">Đường</option>
                 </select>
               </div>
-              <div class="chart-box"><canvas id="chart" role="img" aria-label="Biểu đồ"></canvas></div>
+              <div class="chart-box"><canvas id="chart" role="img" aria-label="Biểu đồ"></canvas><div id="heatmap" class="heatmap" hidden></div></div>
               <div id="chartScope" class="chart-scope" aria-live="polite"></div>
             </div>
           </div>
@@ -316,6 +331,41 @@
               <h2 data-i18n="insight.title">Insight tháng này</h2>
               <div id="insightListFull" class="insight-list"></div>
               <div id="insightEmptyFull" class="empty-state" style="display:none" data-i18n="insight.empty">Chưa đủ dữ liệu để rút ra nhận xét. Ghi chép đều vài tuần nhé!</div>
+            </div>
+          </div>
+
+          <div class="card span-all" id="sec-health">
+            <div class="card-body">
+              <div class="card-head"><h2 data-i18n="health.title">Điểm sức khỏe tài chính</h2><button id="editHealth" class="btn ghost small" type="button" data-i18n="health.weights">Trọng số</button></div>
+              <div id="healthBody"></div>
+            </div>
+          </div>
+
+          <div class="card span-all" id="sec-debts">
+            <div class="card-body">
+              <div class="card-head"><h2 data-i18n="debt.title">Quản lý nợ</h2><button id="addDebt" class="btn primary small" type="button" data-i18n="debt.add">＋ Khoản nợ</button></div>
+              <div id="debtList" class="goal-list" role="list"></div>
+              <div id="debtEmpty" class="empty-state" style="display:none" data-i18n="debt.empty">Chưa có khoản nợ nào. Thêm khoản vay/trả góp (gốc, lãi %/năm, kỳ hạn) để xem lịch trả nợ và chiến lược trả sớm.</div>
+              <div id="debtStrategy" class="strategy" hidden></div>
+            </div>
+          </div>
+
+          <div class="card" id="sec-networth">
+            <div class="card-body">
+              <div class="card-head"><h2 data-i18n="nw.title">Tài sản ròng</h2><button id="addAsset" class="btn primary small" type="button" data-i18n="nw.add">＋ Tài sản</button></div>
+              <div id="nwSummary" class="nw-summary"></div>
+              <div class="chart-box" style="height:200px"><canvas id="nwChart" role="img" aria-label="Biểu đồ tài sản ròng"></canvas></div>
+              <div id="nwItems" class="manage-list" role="list"></div>
+              <p class="hint" data-i18n="nw.hint">Ví trong app tự tính. Khai báo thêm sổ tiết kiệm, chứng khoán, vàng, bất động sản, xe… và các khoản nợ ngoài app. Snapshot lưu mỗi tháng để vẽ biểu đồ.</p>
+            </div>
+          </div>
+
+          <div class="card" id="sec-forecast">
+            <div class="card-body">
+              <div class="card-head"><h2 data-i18n="fc.title">Dự báo dòng tiền</h2>
+                <select id="fcMonths" style="width:auto" data-i18n-aria="fc.months" aria-label="Số tháng dự báo"><option value="3">3</option><option value="6">6</option><option value="12">12</option></select></div>
+              <div id="fcBody"></div>
+              <p id="fcAssume" class="hint"></p>
             </div>
           </div>
         </div>
