@@ -394,3 +394,40 @@ a.btn { text-decoration: none; display: inline-flex; align-items: center; justif
 .fs-check input { width: auto; }
 input[type="color"] { padding: 4px; height: 44px; }
 .tx .badge { color: var(--primary-700); }
+
+/* ===== P1b: ngân sách / 50-30-20 / quỹ / mục tiêu / insight / sắp xếp thẻ ===== */
+.budget-list, .goal-list { display: flex; flex-direction: column; gap: 10px; }
+.bar-row { position: relative; }
+.bar-row.budget-row, .bar-row.goal-row { padding: 10px 12px; border: 1px solid var(--ring); border-radius: 12px; background: var(--surface-2); cursor: pointer; }
+.bar-row.budget-row:hover, .bar-row.goal-row:hover, .bar-row.budget-row:focus-visible, .bar-row.goal-row:focus-visible { background: var(--hover); }
+.bar-sub { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
+.bar-val.warn { color: var(--danger); }
+.bar-fill.lvl-ok, .lvl-ok .bar-fill { background: var(--ok); }
+.bar-fill.lvl-warn, .lvl-warn .bar-fill { background: #f9a825; }
+.bar-fill.lvl-over, .lvl-over .bar-fill { background: var(--danger); }
+.lvl-over .bar-val { color: var(--danger); }
+.lvl-warn .bar-val { color: #b26a00; }
+.bar-target { position: absolute; top: -3px; width: 2px; height: 14px; background: var(--text); opacity: .6; border-radius: 1px; }
+.bar-track { position: relative; }
+.goal-row.done { opacity: .7; }
+.goal-sub { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.goal-sub .btn { min-height: 30px; padding: 4px 10px; }
+.assign-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; font-size: 14px; margin-top: 6px; }
+.assign-row select { width: auto; padding: 6px 10px; font-size: 14px; }
+.ef-line { font-size: 14px; margin: 4px 0; }
+.ef-track { height: 12px; margin: 8px 0; }
+.insight-list { display: flex; flex-direction: column; gap: 8px; }
+.insight { padding: 10px 12px; border-radius: 12px; font-size: 14px; line-height: 1.45; border: 1px solid var(--ring); background: var(--surface-2); }
+.insight.lvl-good { background: var(--status-rich-bg); border-color: var(--status-rich-bd); color: var(--status-rich-fg); }
+.insight.lvl-warn { background: var(--status-neutral-bg); border-color: var(--status-neutral-bd); color: var(--status-neutral-fg); }
+.insight-ul { margin: 6px 0 0; padding-left: 18px; font-size: 13px; }
+.warn-item.warn-soft { background: var(--status-neutral-bg); border-color: var(--status-neutral-bd); color: var(--status-neutral-fg); }
+.contrib-list { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.contrib-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 4px 0; border-bottom: 1px dashed var(--ring); }
+.contrib-row .btn { min-height: 28px; min-width: 28px; font-size: 14px; padding: 2px 6px; }
+.home-tools { text-align: right; margin-top: 12px; }
+.grid.reorder .card { outline: 2px dashed var(--primary); outline-offset: -2px; }
+.grid.reorder .card.dragging { opacity: .5; }
+.card-reorder { display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: var(--primary-50); border-bottom: 1px solid var(--ring); }
+.card-reorder .drag-handle { cursor: grab; color: var(--muted); font-weight: 800; letter-spacing: -2px; margin-right: auto; }
+.card-reorder .btn { min-height: 28px; padding: 2px 8px; }

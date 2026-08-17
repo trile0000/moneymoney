@@ -46,8 +46,8 @@
     <main id="main">
       <!-- ============ TRANG CHỦ ============ -->
       <section data-view="home" class="view" aria-labelledby="tab-home">
-        <div class="grid">
-          <div class="card">
+        <div id="homeGrid" class="grid">
+          <div class="card" data-card="summary">
             <div class="card-body">
               <h2 data-i18n="home.summary">Tổng kết tháng</h2>
               <div class="chart-controls">
@@ -66,7 +66,7 @@
             </div>
           </div>
 
-          <div class="card">
+          <div class="card" data-card="accounts">
             <div class="card-body">
               <div class="card-head">
                 <h2 data-i18n="home.accounts">Ví của bạn</h2>
@@ -81,7 +81,40 @@
             </div>
           </div>
 
-          <div class="card">
+          <div class="card" data-card="insights">
+            <div class="card-body">
+              <div class="card-head">
+                <h2 data-i18n="insight.title">Insight tháng này</h2>
+                <a href="#/budget" class="btn ghost small" data-i18n="home.viewAll">Xem tất cả</a>
+              </div>
+              <div id="insightList" class="insight-list"></div>
+              <div id="insightEmpty" class="empty-state" style="display:none" data-i18n="insight.empty">Chưa đủ dữ liệu để rút ra nhận xét. Ghi chép đều vài tuần nhé!</div>
+            </div>
+          </div>
+
+          <div class="card" data-card="budgets">
+            <div class="card-body">
+              <div class="card-head">
+                <h2 data-i18n="budget.title">Ngân sách tháng</h2>
+                <a href="#/budget" class="btn ghost small" data-i18n="home.viewAll">Xem tất cả</a>
+              </div>
+              <div id="homeBudgetList" class="budget-list" role="list"></div>
+              <div id="homeBudgetEmpty" class="empty-state" style="display:none" data-i18n="budget.emptyHome">Chưa đặt ngân sách. Vào tab Ngân sách để đặt hạn mức tháng.</div>
+            </div>
+          </div>
+
+          <div class="card" data-card="goals">
+            <div class="card-body">
+              <div class="card-head">
+                <h2 data-i18n="goal.title">Mục tiêu tiết kiệm</h2>
+                <a href="#/budget" class="btn ghost small" data-i18n="home.viewAll">Xem tất cả</a>
+              </div>
+              <div id="homeGoalList" class="goal-list" role="list"></div>
+              <div id="homeGoalEmpty" class="empty-state" style="display:none" data-i18n="goal.emptyHome">Chưa có mục tiêu tiết kiệm.</div>
+            </div>
+          </div>
+
+          <div class="card" data-card="chart">
             <div class="card-body">
               <h2 data-i18n="home.chart">Biểu đồ</h2>
               <div class="mascot-center"><img id="mascotChart" src="assets/mascot/sm/tiger_spending.webp" alt="" width="80" height="80" /></div>
@@ -104,7 +137,7 @@
             </div>
           </div>
 
-          <div class="card">
+          <div class="card" data-card="recent">
             <div class="card-body">
               <div class="card-head">
                 <h2 data-i18n="home.recent">Giao dịch gần đây</h2>
@@ -115,7 +148,7 @@
             </div>
           </div>
 
-          <div class="card">
+          <div class="card" data-card="upcoming">
             <div class="card-body">
               <div class="card-head">
                 <h2 data-i18n="home.upcoming">Định kỳ sắp tới</h2>
@@ -126,6 +159,7 @@
             </div>
           </div>
         </div>
+        <div class="home-tools"><button id="reorderCards" class="btn ghost small" type="button" aria-pressed="false" data-i18n="home.reorder">↕ Sắp xếp thẻ</button></div>
       </section>
 
       <!-- ============ GIAO DỊCH ============ -->
@@ -239,17 +273,49 @@
       <!-- ============ NGÂN SÁCH (P1b) ============ -->
       <section data-view="budget" class="view" hidden aria-labelledby="tab-budget">
         <div class="grid">
-          <div class="card">
+          <div class="card span-all">
             <div class="card-body">
-              <h2 data-i18n="budget.spendByCat">Chi tiêu theo danh mục — tháng này</h2>
-              <div id="budgetCatBars" class="bars"></div>
-              <div id="budgetEmpty" class="empty-state" style="display:none" data-i18n="budget.empty">Chưa có chi tiêu tháng này.</div>
+              <div class="card-head">
+                <h2 data-i18n="budget.title">Ngân sách tháng</h2>
+                <div class="row-actions" style="gap:6px">
+                  <input id="bMonth" type="month" style="width:auto" data-i18n-aria="home.pickMonth" aria-label="Chọn tháng" />
+                  <button id="addBudget" class="btn primary small" type="button" data-i18n="budget.add">＋ Ngân sách</button>
+                </div>
+              </div>
+              <div id="budgetList" class="budget-list" role="list"></div>
+              <div id="budgetEmpty" class="empty-state" style="display:none" data-i18n="budget.emptyBudgets">Chưa đặt ngân sách nào. Bấm ＋ để đặt hạn mức cho danh mục hay chi (Ăn uống, Mua sắm…) hoặc tổng chi tiêu tháng.</div>
             </div>
           </div>
+
           <div class="card">
             <div class="card-body">
-              <h2 data-i18n="budget.comingTitle">Sắp ra mắt</h2>
-              <p class="muted" data-i18n="budget.comingBody">Ngân sách theo danh mục, quy tắc 50/30/20, quỹ khẩn cấp, mục tiêu tiết kiệm, quản lý nợ, tài sản ròng, dự báo dòng tiền và điểm sức khỏe tài chính sẽ có ở bản 2.2 (P1b/P1c). Danh mục đã có sẵn nhóm Thiết yếu / Mong muốn / Tiết kiệm để chuẩn bị.</p>
+              <div class="card-head"><h2 data-i18n="rule.title">Quy tắc 50/30/20</h2><button id="editRule" class="btn ghost small" type="button" data-i18n="rule.edit">Chỉnh tỉ trọng</button></div>
+              <div id="ruleBars" class="bars"></div>
+              <div id="ruleNote" class="hint" style="margin-top:8px"></div>
+              <div id="ruleUnassigned" class="unassigned" style="margin-top:8px"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-body">
+              <div class="card-head"><h2 data-i18n="ef.title">Quỹ khẩn cấp</h2><button id="editEF" class="btn ghost small" type="button" data-i18n="ef.setup">Thiết lập</button></div>
+              <div id="efBody"></div>
+            </div>
+          </div>
+
+          <div class="card span-all">
+            <div class="card-body">
+              <div class="card-head"><h2 data-i18n="goal.title">Mục tiêu tiết kiệm</h2><button id="addGoal" class="btn primary small" type="button" data-i18n="goal.add">＋ Mục tiêu</button></div>
+              <div id="goalList" class="goal-list" role="list"></div>
+              <div id="goalEmpty" class="empty-state" style="display:none" data-i18n="goal.empty">Chưa có mục tiêu. Ví dụ: mua xe, cưới, du lịch, học phí — nhập số tiền và hạn, app tính mỗi tháng cần để dành bao nhiêu.</div>
+            </div>
+          </div>
+
+          <div class="card span-all">
+            <div class="card-body">
+              <h2 data-i18n="insight.title">Insight tháng này</h2>
+              <div id="insightListFull" class="insight-list"></div>
+              <div id="insightEmptyFull" class="empty-state" style="display:none" data-i18n="insight.empty">Chưa đủ dữ liệu để rút ra nhận xét. Ghi chép đều vài tuần nhé!</div>
             </div>
           </div>
         </div>

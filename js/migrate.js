@@ -11,6 +11,8 @@ import { toLocalYMD, ymOf, isValidYMD, isValidYM } from './utils/date.js';
 import { defaultCategoryList, findOrCreate, makeCategory, normName } from './features/categories.js';
 import { defaultAccountList, makeAccount } from './features/accounts.js';
 import { makeRule } from './features/recurring.js';
+import { makeBudget } from './features/budgets.js';
+import { makeGoal } from './features/goals.js';
 
 export const SCHEMA_VERSION = 3;
 export const LEGACY_SALARY_NOTE = 'Tự động thêm từ hệ thống';
@@ -114,7 +116,9 @@ export function migrate(raw, { settings: settingsIn, now = Date.now() } = {}) {
   data.accounts = (src && Array.isArray(src.accounts) && src.accounts.length ? src.accounts.map((a) => makeAccount(a)) : defaultAccountList());
   data.categories = (src && Array.isArray(src.categories) && src.categories.length ? src.categories.map((c) => makeCategory(c)) : defaultCategoryList());
   data.recurring = src && Array.isArray(src.recurring) ? src.recurring.map((r) => makeRule(r)) : [];
-  for (const k of ['budgets', 'goals', 'debts', 'assets']) data[k] = src && Array.isArray(src[k]) ? src[k].slice() : [];
+  data.budgets = src && Array.isArray(src.budgets) ? src.budgets.map((b) => makeBudget(b)) : [];
+  data.goals = src && Array.isArray(src.goals) ? src.goals.map((g) => makeGoal(g)) : [];
+  for (const k of ['debts', 'assets']) data[k] = src && Array.isArray(src[k]) ? src[k].slice() : [];
   data.snapshots = src && src.snapshots && typeof src.snapshots === 'object' ? { networth: [], ...src.snapshots } : { networth: [] };
 
   const defaultAccount = data.accounts.find((a) => a.id === settings.defaultAccountId && !a.archived) || data.accounts.find((a) => !a.archived) || data.accounts[0];
@@ -202,7 +206,10 @@ export function defaultSettings() {
     lastAccountId: null,
     rule503020: { need: 50, want: 30, save: 20 },
     emergencyMonths: 6,
+    emergencyAccountIds: [], // ví được tính vào quỹ khẩn cấp
+    emergencyExtra: 0, // số tiền quỹ giữ ngoài app (sổ tiết kiệm…)
     savedFilters: [],
+    cardOrder: [], // thứ tự thẻ trang chủ
   };
 }
 
@@ -227,6 +234,9 @@ export function migrateSettings(raw) {
   if (!['system', 'light', 'dark'].includes(out.theme)) out.theme = 'system';
   if (!['vi', 'en'].includes(out.locale)) out.locale = 'vi';
   if (!Array.isArray(out.savedFilters)) out.savedFilters = [];
+  if (!Array.isArray(out.emergencyAccountIds)) out.emergencyAccountIds = [];
+  if (!Array.isArray(out.cardOrder)) out.cardOrder = [];
+  out.emergencyExtra = Math.max(0, Number(out.emergencyExtra) || 0);
   out.emergencyMonths = [3, 6, 12].includes(Number(out.emergencyMonths)) ? Number(out.emergencyMonths) : 6;
   return out;
 }

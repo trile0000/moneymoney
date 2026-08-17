@@ -17,7 +17,7 @@ import { registerSW } from './ui/swUpdate.js';
 import { startRouter, onView, navigate, currentView } from './router.js';
 import { initHome, renderHome, resetAchievementState } from './views/home.js';
 import { initTx, renderTx } from './views/tx.js';
-import { renderBudget } from './views/budget.js';
+import { initBudget, renderBudget } from './views/budget.js';
 import { initSettings, renderSettings, openCategoryForm, openAccountForm, openRuleForm } from './views/settings.js';
 
 let version = 0; // tăng mỗi lần dữ liệu đổi (để virtual list biết cần dựng lại dòng)
@@ -49,6 +49,7 @@ const ctx = {
 
   initHome(ctx);
   initTx(ctx);
+  initBudget(ctx);
   initSettings(ctx);
   initUndo({
     onCommit: async (ids) => { await S.purgeDeleted(ids); },

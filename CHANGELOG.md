@@ -2,6 +2,17 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/vi/1.0.0/). Phiên bản = `APP_VERSION` = `CACHE_VERSION`.
 
+## [2.2.0] — 2026-08-17 — P1b: ngân sách, 50/30/20, quỹ khẩn cấp, mục tiêu tiết kiệm, insight, sắp xếp thẻ
+
+### Thêm
+- **Ngân sách theo danh mục** (hoặc tổng chi tháng): thanh tiến độ xanh/vàng/đỏ (80% / 100%), số còn lại, gợi ý mức chi/ngày cho các ngày còn lại, so sánh với **trung bình 3 tháng trước** (chỉ tính tháng có ghi chép); ngân sách gắn danh mục cha gồm cả con; cảnh báo hiện ở Trang chủ.
+- **Quy tắc 50/30/20**: tỉ lệ thực tế Thiết yếu / Mong muốn / Tiết kiệm–Đầu tư trên thu nhập tháng đang xem (phần thu nhập chưa chi cũng là tiết kiệm), vạch mục tiêu, chỉnh tỉ trọng, xếp nhanh nhóm cho danh mục chưa phân loại.
+- **Quỹ khẩn cấp**: chi thiết yếu TB 6 tháng gần nhất → mục tiêu 3/6/12 tháng; quỹ = ví được chọn + tiền giữ ngoài app; trạng thái đỏ/vàng/xanh; cảnh báo khi dành > 20% thu nhập cho đầu tư mà quỹ chưa đủ 3 tháng.
+- **Mục tiêu tiết kiệm (sinking funds)**: tên, icon, số tiền, hạn → "cần X/tháng", tiến độ, ghi nhận khoản để dành (lịch sử, xóa từng khoản), quá hạn/hoàn thành.
+- **Insight tự động**: tỉ lệ tiết kiệm, danh mục tăng ≥ 30% so TB 3 tháng, top 5 khoản chi, chi phí định kỳ / thu nhập, khoản lặp lại 3 tháng liền (nghi subscription).
+- **Trang chủ dạng thẻ sắp xếp được** (kéo-thả trên desktop, nút ▲▼ trên mọi thiết bị, lưu thứ tự); thêm thẻ Insight, Ngân sách tháng, Mục tiêu.
+- Unit test cho ngân sách, 50/30/20, quỹ khẩn cấp, mục tiêu, insight (83 test tổng); E2E bổ sung.
+
 ## [2.1.0] — 2026-08-17 — P1a: nền tảng Module A (ví, danh mục 2 cấp, định kỳ tổng quát, lọc, tab, dark mode, song ngữ)
 
 ### Thêm

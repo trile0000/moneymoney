@@ -1,6 +1,6 @@
 # P1 — Kế hoạch Module A (Dòng tiền) + Module B (Ngân sách & Sức khỏe tài chính)
 
-> Trạng thái: **đã duyệt (17/08/2026)**. P1a hoàn thành ở v2.1.0; P1b–P1d tiếp theo. Song ngữ làm ở P1a; PIN/mã hóa ở P1d.
+> Trạng thái: **đã duyệt (17/08/2026)**. P1a hoàn thành ở v2.1.0, P1b ở v2.2.0; P1c–P1d tiếp theo. Song ngữ làm ở P1a; PIN/mã hóa ở P1d.
 
 ## 0. Nguyên tắc giữ nguyên từ P0
 - Static, không backend, không API key; vanilla ES modules; không framework.

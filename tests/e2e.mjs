@@ -164,14 +164,52 @@ check('Bỏ qua kỳ tới → skippedDates có 1 mục', d3.recurring.find((r) 
 await page.click('#stRuleList .mini-row >> nth=-1 >> .switch span'); await sleep(300);
 check('Tắt rule qua switch', (await ls('mm_data_v3')).recurring.find((r) => r.name === 'Internet').enabled === false);
 
+// 7b) P1b: ngân sách, mục tiêu, 50/30/20, quỹ khẩn cấp, insight, sắp xếp thẻ
+await goto('#/budget'); await sleep(300);
+await page.click('#addBudget'); await page.waitForSelector('#formSheet.open');
+await page.evaluate(() => { const s = document.getElementById('fs_target'); const o = Array.from(s.options).find((x) => x.textContent.includes('Ăn uống')); s.value = o.value; });
+await page.fill('#fs_amount', '1tr'); await page.click('#fsSave'); await sleep(300);
+d3 = await ls('mm_data_v3');
+check('Ngân sách Ăn uống 1tr được lưu', d3.budgets.length === 1 && d3.budgets[0].amount === 1000000 && d3.budgets[0].categoryId === catOpt);
+const brow = await page.evaluate(() => { const r = document.querySelector('#budgetList .budget-row'); return r ? { cls: r.className, txt: r.textContent } : null; });
+check('Ngân sách hiển thị trạng thái vượt (đã chi 2tr+ / 1tr)', brow && brow.cls.includes('lvl-over') && brow.txt.includes('vượt'), JSON.stringify(brow));
+await page.click('#addGoal'); await page.waitForSelector('#formSheet.open');
+await page.fill('#fs_name', 'Mua xe'); await page.fill('#fs_target', '60tr'); await page.fill('#fs_deadline', `${now.getFullYear() + 1}-02-15`); await page.click('#fsSave'); await sleep(300);
+await page.click('#goalList .goal-row .btn'); await page.waitForSelector('#formSheet.open'); await page.fill('#fs_amount', '12tr'); await page.click('#fsSave'); await sleep(300);
+d3 = await ls('mm_data_v3');
+const goalTxt = await page.evaluate(() => document.querySelector('#goalList .goal-row').textContent);
+check('Mục tiêu 60tr + để dành 12tr → 20%, tính tiền/tháng', d3.goals.length === 1 && d3.goals[0].contributions.length === 1 && goalTxt.includes('20%') && goalTxt.includes('/tháng'), goalTxt.replace(/\s+/g, ' '));
+check('50/30/20 hiển thị 3 thanh', (await page.evaluate(() => document.querySelectorAll('#ruleBars .bar-row').length)) >= 3);
+await page.click('#editEF'); await page.waitForSelector('#formSheet.open');
+await page.selectOption('#fs_months', '3');
+await page.evaluate((id) => { const c = document.getElementById('fs_acc_' + id); if (c) c.checked = true; }, bank.id);
+await page.fill('#fs_extra', '20tr'); await page.click('#fsSave'); await sleep(300);
+const s3b = await ls('mm_settings_v3');
+check('Quỹ khẩn cấp: lưu ví + tiền ngoài app + mục tiêu 3 tháng', s3b.emergencyMonths === 3 && s3b.emergencyAccountIds.includes(bank.id) && s3b.emergencyExtra === 20000000);
+check('Quỹ khẩn cấp hiển thị số tiền quỹ (27tr = 7tr ví + 20tr ngoài)', (await page.textContent('#efBody')).includes('27.000.000'));
+check('Insight có nội dung', (await page.evaluate(() => document.querySelectorAll('#insightListFull .insight').length)) >= 1);
+await goto('#/home'); await sleep(300);
+check('Trang chủ: thẻ ngân sách + cảnh báo vượt', (await page.textContent('#homeBudgetList')).includes('Ăn uống') && (await page.evaluate(() => document.querySelectorAll('#homeBudgetList .warn-item').length)) >= 1);
+check('Trang chủ: thẻ mục tiêu', (await page.textContent('#homeGoalList')).includes('Mua xe'));
+// sắp xếp thẻ: đưa thẻ đầu tiên xuống, kiểm tra lưu thứ tự
+await page.click('#reorderCards'); await sleep(100);
+const firstBefore = await page.evaluate(() => document.querySelector('#homeGrid [data-card]').dataset.card);
+await page.click('#homeGrid [data-card] .card-reorder button:nth-of-type(2)'); await sleep(200);
+const orderSaved = (await ls('mm_settings_v3')).cardOrder;
+check('Sắp xếp thẻ: thẻ đầu tiên chuyển xuống và lưu cardOrder', orderSaved.length === 8 && orderSaved[1] === firstBefore, JSON.stringify(orderSaved));
+await page.click('#reorderCards'); await sleep(100);
+await page.reload(); await page.waitForFunction(() => window.__mm && document.querySelectorAll('#accountList .acc-row').length > 0); await sleep(300);
+check('Reload giữ thứ tự thẻ', (await page.evaluate(() => document.querySelector('#homeGrid [data-card]').dataset.card)) === orderSaved[0]);
+
 // 8) Dark mode + i18n
+await goto('#/settings'); await sleep(200);
 await page.selectOption('#stTheme', 'dark'); await sleep(200);
 check('Dark mode: data-theme=dark', await page.evaluate(() => document.documentElement.dataset.theme === 'dark'));
 await page.screenshot({ path: `${OUT}/p1a-02-settings-dark.png`, fullPage: true });
 await page.selectOption('#stLocale', 'en'); await sleep(300);
 check('Đổi sang English: tab Home', (await page.textContent('#tab-home')).includes('Home') && (await page.evaluate(() => document.documentElement.lang)) === 'en');
 await goto('#/home'); await sleep(300);
-check('English: heading Monthly summary', (await page.textContent('[data-view="home"] h2')).includes('Monthly summary'));
+check('English: heading Monthly summary', await page.evaluate(() => Array.from(document.querySelectorAll('[data-view="home"] h2')).some((h) => h.textContent.includes('Monthly summary'))));
 await page.screenshot({ path: `${OUT}/p1a-03-home-dark-en.png`, fullPage: true });
 await goto('#/settings'); await page.selectOption('#stLocale', 'vi'); await page.selectOption('#stTheme', 'system'); await sleep(200);
 await page.reload(); await page.waitForFunction(() => window.__mm); await sleep(500);
@@ -195,7 +233,7 @@ check('CSV có BOM + cột account/tags', csv.charCodeAt(0) === 0xfeff && csv.sp
 await page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller, null, { timeout: 15000 }).catch(() => {});
 await sleep(1500);
 const sw = await page.evaluate(async () => { const keys = await caches.keys(); const c = await caches.open(keys.find((k) => k.startsWith('mm-')) || 'x'); return { controller: !!navigator.serviceWorker.controller, cached: (await c.keys()).length, keys }; });
-check('SW controlling & precache đủ (>= 50 file)', sw.controller && sw.cached >= 50, JSON.stringify(sw));
+check('SW controlling & precache đủ (>= 58 file)', sw.controller && sw.cached >= 58, JSON.stringify(sw));
 await goto('#/home');
 await ctx.setOffline(true);
 await page.reload().catch(() => {});

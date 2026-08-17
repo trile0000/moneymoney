@@ -11,6 +11,8 @@ import { renderChart } from '../ui/charts.js';
 import { fireConfetti } from '../ui/confetti.js';
 import { showToast } from '../ui/toast.js';
 import { navigate } from '../router.js';
+import { renderBudgetList, renderGoals, renderInsights, budgetAlerts } from './budget.js';
+import { applyCardOrder, setReorderMode, currentOrder } from '../ui/cards.js';
 
 const ASSET = 'assets/mascot/sm/';
 let ctx = null;
@@ -27,6 +29,16 @@ export function initHome(c) {
   els.chartMode.addEventListener('change', () => renderHome('chart'));
   els.chartType.addEventListener('change', () => renderHome('chart'));
   els.quickTransfer.addEventListener('click', () => navigate('tx', { focus: 'amount', type: 'transfer' }));
+  const grid = $('#homeGrid');
+  applyCardOrder(grid, S.getSettings().cardOrder);
+  const btn = $('#reorderCards');
+  let reorder = false;
+  btn.addEventListener('click', () => {
+    reorder = !reorder;
+    btn.setAttribute('aria-pressed', String(reorder));
+    btn.textContent = reorder ? '✓ ' + t('home.reorderDone') : t('home.reorder');
+    setReorderMode(grid, reorder, (order) => S.updateSettings({ cardOrder: order }, { silent: true }));
+  });
 }
 
 function currentMonthKey() { const v = els.filterMonth.value; return isValidYM(v) ? v : ''; }
@@ -66,7 +78,13 @@ export function renderHome(reason = 'data') {
   }
 
   renderChart({ canvas: els.chart, scopeEl: els.chartScope, mode: els.chartMode.value, type: els.chartType.value, monthKey: key, month: m, monthIndex: S.getMonthIndex(), categoryOf: S.getCategoryById });
-  if (reason !== 'chart' && reason !== 'filter') { renderAccounts(); renderRecent(); renderUpcoming(); }
+  if (reason !== 'chart' && reason !== 'filter') { renderAccounts(); renderRecent(); renderUpcoming(); renderHomeBudgets(); renderInsights($('#insightList'), $('#insightEmpty'), toLocalYM(), 3); renderGoals($('#homeGoalList'), $('#homeGoalEmpty'), { compact: true, limit: 3 }); }
+}
+
+function renderHomeBudgets() {
+  const holder = $('#homeBudgetList');
+  renderBudgetList(holder, $('#homeBudgetEmpty'), toLocalYM(), { compact: true, limit: 4 });
+  for (const a of budgetAlerts().slice(0, 3)) holder.appendChild(el('div', { className: 'warn-item' + (a.level === 'over' ? '' : ' warn-soft'), text: a.text }));
 }
 export function resetAchievementState() { prevCurrentTier = null; }
 

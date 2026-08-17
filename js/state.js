@@ -6,6 +6,8 @@ import { ymOf, toLocalYMD } from './utils/date.js';
 import { makeAccount, computeBalances } from './features/accounts.js';
 import { makeCategory, buildTree, byId as catById, mergeCategory as mergeCat, descendantIds } from './features/categories.js';
 import { makeRule, runRecurring, nextOccurrence } from './features/recurring.js';
+import { makeBudget } from './features/budgets.js';
+import { makeGoal } from './features/goals.js';
 
 const state = {
   data: null,
@@ -327,3 +329,61 @@ export function getNoteSuggestions(categoryId = null, limit = 8) {
   return Array.from(m.entries()).sort((a, b) => b[1] - a[1]).slice(0, limit).map(([k]) => k);
 }
 export function getRecent(limit = 5) { return getVisible().slice(0, limit); }
+
+// ---------- Ngân sách ----------
+export function getBudgets() { return state.data.budgets; }
+export function getBudgetById(id) { return state.data.budgets.find((b) => b.id === id); }
+export async function addBudget(partial) {
+  const b = makeBudget(partial);
+  // 1 ngân sách / danh mục (null = tổng): thay thế nếu đã có
+  state.data.budgets = state.data.budgets.filter((x) => (x.categoryId || null) !== (b.categoryId || null));
+  state.data.budgets.push(b);
+  await persist({ type: 'budgets' });
+  return b;
+}
+export async function updateBudget(id, patch) {
+  const i = state.data.budgets.findIndex((b) => b.id === id);
+  if (i < 0) return null;
+  const b = makeBudget({ ...state.data.budgets[i], ...patch, id });
+  state.data.budgets[i] = b;
+  await persist({ type: 'budgets' });
+  return b;
+}
+export async function removeBudget(id) {
+  state.data.budgets = state.data.budgets.filter((b) => b.id !== id);
+  await persist({ type: 'budgets' });
+}
+
+// ---------- Mục tiêu tiết kiệm ----------
+export function getGoals() { return state.data.goals; }
+export function getGoalById(id) { return state.data.goals.find((g) => g.id === id); }
+export async function addGoal(partial) {
+  const g = makeGoal(partial);
+  state.data.goals.push(g);
+  await persist({ type: 'goals' });
+  return g;
+}
+export async function updateGoal(id, patch) {
+  const i = state.data.goals.findIndex((g) => g.id === id);
+  if (i < 0) return null;
+  const g = makeGoal({ ...state.data.goals[i], ...patch, id });
+  state.data.goals[i] = g;
+  await persist({ type: 'goals' });
+  return g;
+}
+export async function removeGoal(id) {
+  state.data.goals = state.data.goals.filter((g) => g.id !== id);
+  await persist({ type: 'goals' });
+}
+export async function addContribution(goalId, { amount, date, note }) {
+  const g = getGoalById(goalId);
+  if (!g) return null;
+  const c = { id: uuid(), amount: Math.round(Number(amount) || 0), date: date || toLocalYMD(), note: String(note || '').trim() };
+  if (!c.amount) return null;
+  return updateGoal(goalId, { contributions: [...g.contributions, c] });
+}
+export async function removeContribution(goalId, cid) {
+  const g = getGoalById(goalId);
+  if (!g) return null;
+  return updateGoal(goalId, { contributions: g.contributions.filter((c) => c.id !== cid) });
+}
