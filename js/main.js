@@ -127,7 +127,7 @@ function render(reason = 'data') {
   list.setItems(m.items);
   els.emptyState.style.display = m.items.length ? 'none' : 'flex';
   els.emptyState.textContent = key ? `Chưa có giao dịch nào trong ${monthLabel(key)}.` : 'Chưa có giao dịch nào.';
-  els.listViewport.setAttribute('aria-label', `Danh sách giao dịch ${key ? monthLabel(key) : 'tất cả'} (${m.items.length})`);
+  els.listCanvas.setAttribute('aria-label', `Danh sách giao dịch ${key ? monthLabel(key) : 'tất cả'} (${m.items.length})`);
 
   if (reason !== 'chart' && reason !== 'filter') renderRecentCats();
 }
@@ -135,7 +135,6 @@ function render(reason = 'data') {
 /** Ghi số KPI và tự thu nhỏ chữ nếu không vừa ô (số rất lớn trên màn hình hẹp) */
 function setKpi(node, value) {
   node.textContent = formatVND(value, { withUnit: false });
-  node.setAttribute('aria-label', formatVND(value));
   node.style.fontSize = '';
   let size = parseFloat(getComputedStyle(node).fontSize) || 16;
   let guard = 0;

@@ -13,6 +13,7 @@
   <link rel="icon" href="assets/favicon-64.png" />
   <link rel="manifest" href="manifest.json" />
   <link rel="preload" href="assets/fonts/Baloo2-latin-vi.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="assets/mascot/sm/tiger_logo.webp" as="image" type="image/webp" />
   <link rel="stylesheet" href="css/app.css" />
 </head>
 <body>
@@ -43,7 +44,7 @@
       <div class="card">
         <div class="card-body">
           <h2 id="addTitle">Thêm khoản thu/chi</h2>
-          <div class="mascot-center"><img src="assets/mascot/sm/tiger_logo.webp" alt="" width="80" height="80" /></div>
+          <div class="mascot-center"><img src="assets/mascot/sm/tiger_logo.webp" alt="" width="80" height="80" fetchpriority="high" /></div>
           <form id="addForm" class="form-grid" novalidate aria-labelledby="addTitle">
             <div class="form-group">
               <label for="txDate">Ngày</label>
@@ -72,7 +73,7 @@
                 <option value="Lương"></option>
                 <option value="Khác"></option>
               </datalist>
-              <div id="recentCats" class="chips" aria-label="Danh mục dùng gần đây"></div>
+              <div id="recentCats" class="chips" role="group" aria-label="Danh mục dùng gần đây"></div>
             </div>
             <div class="form-group">
               <label for="amount">Số tiền (đ)</label>
@@ -147,8 +148,8 @@
             <h2 style="margin:0">Danh sách giao dịch</h2>
             <span class="list-help">Chạm để sửa · Vuốt trái hoặc ✕ để xóa (có Hoàn tác 5 giây)</span>
           </div>
-          <div id="listViewport" class="list-viewport" tabindex="0" role="list" aria-label="Danh sách giao dịch tháng đang chọn">
-            <div id="listCanvas" class="list-canvas"></div>
+          <div id="listViewport" class="list-viewport" tabindex="0" role="region" aria-label="Danh sách giao dịch tháng đang chọn">
+            <div id="listCanvas" class="list-canvas" role="list"></div>
           </div>
           <div id="emptyState" class="empty-state" style="display:none">Chưa có giao dịch nào trong tháng này.</div>
         </div>

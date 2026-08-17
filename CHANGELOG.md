@@ -2,6 +2,12 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/vi/1.0.0/). Phiên bản = `APP_VERSION` = `CACHE_VERSION`.
 
+## [2.0.1] — 2026-08-17 — Tinh chỉnh theo Lighthouse (Perf 94/97, A11y 95 → mục tiêu 100)
+
+- A11y: bỏ `aria-label` trên phần tử generic (KPI, chips → `role=group`), cây danh sách đúng cấu trúc `list > listitem` (viewport là `region`, canvas là `list`) — sửa "prohibited ARIA attributes" và "accessibility tree not well-formed".
+- CLS: font fallback có `size-adjust/ascent-override` cho Baloo 2, giữ chỗ cho hàng chip danh mục và danh sách; preload + `fetchpriority=high` cho ảnh LCP; logo dùng webp.
+- Ghi chú: cảnh báo "cache lifetimes" đến từ header của GitHub Pages (max-age=600), không đổi được từ repo; app đã có service worker precache nên không ảnh hưởng lần mở sau.
+
 ## [2.0.0] — 2026-08-17 — P0: sửa 27 lỗi rà soát + tách module
 
 Chi tiết từng lỗi: `docs/P0-review.md`.
