@@ -4,9 +4,13 @@ PWA quản lý thu chi cá nhân cho người dùng Việt Nam. **Static site**,
 
 🔗 https://trile0000.github.io/moneymoney/
 
-## Tính năng (bản 2.0.0 — P0)
+## Tính năng (bản 2.1.0 — P1a)
 
-- Thêm / **sửa (bottom sheet)** / **xóa có Hoàn tác 5 giây** khoản thu–chi; nhập số tiền gõ tắt `50k`, `1tr5`, `1.250.000` có xác nhận ngay dưới ô.
+- **Nhiều ví/tài khoản** (tiền mặt, ngân hàng, ví điện tử, thẻ tín dụng có ngày sao kê/đến hạn), **chuyển khoản giữa ví**, số dư từng ví.
+- **Danh mục 2 cấp** có icon/màu/nhóm 50-30-20, **tag** tự do, **giao dịch định kỳ** tổng quát (ngày/tuần/tháng/năm, bù kỳ thiếu, bỏ qua 1 kỳ).
+- Thêm nhanh / **sửa (bottom sheet)** / **xóa có Hoàn tác 5 giây**; nhập số tiền gõ tắt `50k`, `1tr5`, `1.250.000` có xác nhận ngay dưới ô; nhớ danh mục/ví gần nhất, gợi ý ghi chú, lặp lại giao dịch.
+- **Tìm kiếm không dấu & lọc** (thời gian, loại, ví, danh mục, tag, khoảng tiền), bộ lọc đã lưu.
+- **Tab dưới cùng**, **dark mode**, **song ngữ Việt/Anh**.
 - Tổng kết theo tháng, mascot hổ + 5 tier (ngưỡng & thông điệp tùy chỉnh), kỷ lục — chỉ tính cho tháng hiện tại.
 - Biểu đồ danh mục / thu-chi / biến động 12 tháng (Chart.js self-host), ghi rõ phạm vi dữ liệu.
 - **Lương định kỳ** tự sinh ngày 01, **bù đủ kỳ thiếu** dù không mở app đúng ngày.
@@ -17,37 +21,44 @@ PWA quản lý thu chi cá nhân cho người dùng Việt Nam. **Static site**,
 ## Cấu trúc
 
 ```
-index.html              markup thuần (không inline JS/CSS)
-css/app.css             style + @font-face self-host
+index.html              markup thuần (4 view + tab bar; không inline JS/CSS)
+css/app.css             style, biến màu sáng/tối, @font-face self-host
 js/
-  main.js               điểm vào, nối state ↔ UI
+  main.js               điểm vào: boot, luồng dùng chung (sửa/xóa/undo/nhập/xuất), theme, i18n, SW
+  router.js             hash router #/home #/tx #/budget #/settings
+  i18n.js               từ điển vi/en, t(), applyI18n()
   version.js            APP_VERSION (đổi bằng scripts/bump-version.mjs)
-  state.js              state trong bộ nhớ, chỉ mục theo tháng, mutation
+  state.js              state trong bộ nhớ (giao dịch, ví, danh mục, định kỳ), chỉ mục memoized, mutation
   storage.js            localStorage + IndexedDB, quota, migration khi load
-  migrate.js            schema v1 → v2 (thuần, có test)
+  migrate.js            schema v1 → v2 → v3 (thuần, có test)
   utils/                id (uuid), date (local YYYY-MM-DD), money (parser VND), csv (RFC 4180), dom (el/trapFocus)
-  features/             recurring (lương định kỳ), achievements (tier), importExport
-  ui/                   list (virtual), editSheet, confirm, modal, undo, gestures, charts, amountInput, toast, confetti, swUpdate
+  features/             accounts, categories, recurring (engine tổng quát), filters, achievements, importExport
+  views/                home, tx (thêm nhanh + lọc + danh sách), budget (P1a: xem trước), settings (ví/danh mục/định kỳ/tier/dữ liệu)
+  ui/                   list (virtual), editSheet, formSheet, pickers, confirm, modal, undo, gestures, charts, amountInput, toast, confetti, theme, swUpdate
 service-worker.js       precache app shell, network-first HTML/JS/CSS, cache-first asset
 vendor/chart.umd.js     Chart.js 4.4.7 (MIT)
 assets/fonts/           Baloo 2, Quicksand — woff2 subset Latin+Vietnamese (OFL)
 assets/mascot/sm/       mascot 192px webp/png dùng trong app (bản 1024px gốc giữ ở assets/mascot/)
 tests/                  unit test (node --test) + e2e.mjs (Playwright)
 docs/P0-review.md       xác nhận 27 lỗi P0 + lỗi bổ sung
+docs/P1-plan.md         kế hoạch P1 (P1a đã xong, P1b–P1d tiếp theo)
 scripts/bump-version.mjs
 ```
 
 ## Dữ liệu
 
-- `mm_data_v2`: `{ schemaVersion: 2, transactions: [...], meta, savedAt }`
-- Giao dịch: `{ id (uuid), type: 'income'|'expense', amount, category, note, date: 'YYYY-MM-DD' (giờ địa phương), createdAt (ms), updatedAt?, source: 'manual'|'auto-salary'|'import', periodKey?: 'YYYY-MM', deletedAt? }`
-- `mm_settings_v2`: lương, danh mục lương, `lastSalaryPeriod`, ngưỡng tier, thông điệp, `bestTier`, `bestTierMonth`.
-- Key cũ `mm_transactions_v1` / `mm_settings_v1` **được giữ nguyên** sau khi nâng cấp (phao cứu sinh). Mọi lần lưu ghi song song vào IndexedDB `moneymoney/kv`.
+- `mm_data_v3`: `{ schemaVersion: 3, transactions, accounts, categories, recurring, budgets, goals, debts, assets, snapshots, meta, savedAt }`
+- Giao dịch: `{ id, type: 'income'|'expense'|'transfer', amount, categoryId, category (tên), accountId, toAccountId?, tags[], note, date: 'YYYY-MM-DD' (giờ địa phương), createdAt, updatedAt?, source: 'manual'|'recurring'|'import'|'auto-salary', recurringId?, periodKey?, deletedAt? }`
+- Ví: `{ id, name, type: 'cash'|'bank'|'ewallet'|'credit', openingBalance, color, icon, archived, credit?: { limit, statementDay, dueDay } }`
+- Danh mục: `{ id, name, parentId|null, kind: 'expense'|'income'|'both', icon, color, group: 'need'|'want'|'save'|null, archived }`
+- Định kỳ: `{ id, name, enabled, template: { type, amount, categoryId, accountId, toAccountId?, note, tags }, freq, interval, byMonthDay, startDate, endDate?, lastDate (watermark), skippedDates[], legacySalary }`
+- `mm_settings_v3`: theme, locale, defaultAccountId, lastCategoryId/lastAccountId, savedFilters, ngưỡng tier, thông điệp, bestTier…
+- Key cũ `mm_transactions_v1` / `mm_data_v2` **được giữ nguyên** sau khi nâng cấp (phao cứu sinh). Mọi lần lưu ghi song song vào IndexedDB `moneymoney/kv`.
 
 ## Phát triển
 
 ```bash
-npm test                        # 64 unit test (node >= 20, không cần cài gì)
+npm test                        # 77 unit test (node >= 20, không cần cài gì)
 python3 -m http.server 8080     # hoặc bất kỳ static server nào
 node tests/e2e.mjs              # Playwright headless (cần `npm i -D playwright` + Chromium)
 ```

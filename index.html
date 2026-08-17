@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Quản Lý Chi Tiêu</title>
   <meta name="description" content="Ứng dụng quản lý chi tiêu cá nhân, chạy offline, dữ liệu chỉ nằm trên máy bạn." />
-  <meta name="theme-color" content="#7a2a1a" />
+  <meta name="theme-color" content="#7a2a1a" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#1c1412" media="(prefers-color-scheme: dark)" />
+  <meta name="color-scheme" content="light dark" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Chi Tiêu" />
@@ -15,244 +17,402 @@
   <link rel="preload" href="assets/fonts/Baloo2-latin-vi.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="assets/mascot/sm/tiger_logo.webp" as="image" type="image/webp" />
   <link rel="stylesheet" href="css/app.css" />
+  <script>
+    // Áp theme sớm để không chớp sáng/tối (đọc trực tiếp settings v3, fallback hệ thống)
+    try { var s = JSON.parse(localStorage.getItem('mm_settings_v3') || 'null'); if (s && (s.theme === 'dark' || s.theme === 'light')) document.documentElement.dataset.theme = s.theme; if (s && s.locale === 'en') document.documentElement.lang = 'en'; } catch (e) {}
+  </script>
 </head>
 <body>
-  <a class="skip-link" href="#main">Bỏ qua tới nội dung chính</a>
+  <a class="skip-link" href="#main" data-i18n="a11y.skip">Bỏ qua tới nội dung chính</a>
 
   <div id="updateBanner" class="update-banner" role="status">
-    <span>🆕 Có phiên bản mới</span>
-    <button id="updateReload" class="btn" type="button">Tải lại</button>
-    <button id="updateDismiss" class="icon-btn" type="button" aria-label="Đóng thông báo cập nhật" style="color:#fff">✕</button>
+    <span data-i18n="sw.newVersion">🆕 Có phiên bản mới</span>
+    <button id="updateReload" class="btn" type="button" data-i18n="sw.reload">Tải lại</button>
+    <button id="updateDismiss" class="icon-btn" type="button" data-i18n-aria="common.close" aria-label="Đóng thông báo cập nhật" style="color:#fff">✕</button>
   </div>
 
   <div class="container">
     <header class="app-header">
       <div class="title">
         <div class="logo" role="img" aria-label="Logo hổ vàng"></div>
-        <h1>Quản Lý Chi Tiêu <span class="offline-badge" aria-live="polite">Offline</span></h1>
+        <h1 data-i18n="app.title">Quản Lý Chi Tiêu <span class="offline-badge" aria-live="polite" data-i18n="app.offline">Offline</span></h1>
       </div>
       <div class="actions">
-        <button id="openSettings" class="btn ghost" type="button" aria-haspopup="dialog">⚙️ Cài đặt</button>
-        <button id="exportCSV" class="btn ghost" type="button">📄 Xuất CSV</button>
-        <button id="clearAll" class="btn danger" type="button" aria-haspopup="dialog">🗑️ Xóa tất cả</button>
+        <button id="themeToggle" class="btn ghost icon-only" type="button" data-i18n-aria="settings.theme" aria-label="Chế độ sáng/tối" title="Sáng / Tối">🌗</button>
+        <a href="#/settings" class="btn ghost" data-i18n="nav.settings">⚙️ Cài đặt</a>
       </div>
     </header>
 
     <main id="main">
-    <section class="grid">
-      <!-- Form thêm -->
-      <div class="card">
-        <div class="card-body">
-          <h2 id="addTitle">Thêm khoản thu/chi</h2>
-          <div class="mascot-center"><img src="assets/mascot/sm/tiger_logo.webp" alt="" width="80" height="80" fetchpriority="high" /></div>
-          <form id="addForm" class="form-grid" novalidate aria-labelledby="addTitle">
-            <div class="form-group">
-              <label for="txDate">Ngày</label>
-              <input id="txDate" name="date" type="date" required />
-            </div>
-            <div class="form-group">
-              <label for="type">Loại</label>
-              <select id="type" name="type">
-                <option value="expense">Chi (-)</option>
-                <option value="income">Thu (+)</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="category">Danh mục</label>
-              <input id="category" name="category" list="categories" placeholder="VD: Ăn uống" autocomplete="off" required />
-              <datalist id="categories">
-                <option value="Ăn uống"></option>
-                <option value="Đi lại"></option>
-                <option value="Hóa đơn"></option>
-                <option value="Mua sắm"></option>
-                <option value="Giải trí"></option>
-                <option value="Giáo dục"></option>
-                <option value="Sức khỏe"></option>
-                <option value="Nhà cửa"></option>
-                <option value="Gia đình"></option>
-                <option value="Lương"></option>
-                <option value="Khác"></option>
-              </datalist>
-              <div id="recentCats" class="chips" role="group" aria-label="Danh mục dùng gần đây"></div>
-            </div>
-            <div class="form-group">
-              <label for="amount">Số tiền (đ)</label>
-              <input id="amount" name="amount" type="text" inputmode="text" autocomplete="off" placeholder="VD: 50k, 1tr5, 1.250.000" aria-describedby="amountHint" required />
-              <div id="amountHint" class="hint" aria-live="polite"></div>
-            </div>
-            <div class="form-group full">
-              <label for="note">Ghi chú</label>
-              <textarea id="note" name="note" placeholder="(tùy chọn)" rows="2"></textarea>
-            </div>
-            <div class="form-group full">
-              <div id="formError" class="form-error" role="alert" aria-live="assertive"></div>
-              <div class="row-actions">
-                <button id="add" class="btn primary" type="submit">Thêm</button>
-                <button id="resetForm" class="btn ghost" type="button">Nhập lại</button>
+      <!-- ============ TRANG CHỦ ============ -->
+      <section data-view="home" class="view" aria-labelledby="tab-home">
+        <div class="grid">
+          <div class="card">
+            <div class="card-body">
+              <h2 data-i18n="home.summary">Tổng kết tháng</h2>
+              <div class="chart-controls">
+                <label for="filterMonth" data-i18n="home.pickMonth">Chọn tháng</label>
+                <input id="filterMonth" type="month" />
+                <button id="thisMonth" class="btn ghost small" type="button" data-i18n="home.thisMonth">Tháng này</button>
+                <span id="txCount" class="tx-count" aria-live="polite"></span>
+              </div>
+              <div class="mascot-center"><img id="mascotBalance" src="assets/mascot/sm/tiger_income.webp" alt="" width="80" height="80" fetchpriority="high" /></div>
+              <div id="balanceStatus" class="status-bar status--neutral" role="status" aria-live="polite"></div>
+              <div class="kpis" role="group" data-i18n-aria="home.kpiGroup" aria-label="Tổng kết tháng đang chọn">
+                <div class="kpi"><h4 data-i18n="home.income">Tổng thu (đ)</h4><div class="val" id="sumIncome">0</div></div>
+                <div class="kpi"><h4 data-i18n="home.expense">Tổng chi (đ)</h4><div class="val" id="sumExpense">0</div></div>
+                <div class="kpi"><h4 data-i18n="home.balance">Số dư (đ)</h4><div class="val" id="sumBalance">0</div></div>
               </div>
             </div>
-          </form>
-        </div>
-      </div>
+          </div>
 
-      <!-- Tổng kết tháng -->
-      <div class="card">
-        <div class="card-body">
-          <h2>Tổng kết tháng</h2>
-          <div class="chart-controls">
-            <label for="filterMonth">Chọn tháng</label>
-            <input id="filterMonth" type="month" />
-            <button id="thisMonth" class="btn ghost small" type="button">Tháng này</button>
-            <span id="txCount" class="tx-count" aria-live="polite"></span>
+          <div class="card">
+            <div class="card-body">
+              <div class="card-head">
+                <h2 data-i18n="home.accounts">Ví của bạn</h2>
+                <a href="#/settings?section=accounts" class="btn ghost small" data-i18n="home.manageAccounts">Quản lý</a>
+              </div>
+              <div id="accountList" class="acc-list" role="list"></div>
+              <div id="accountTotal" class="acc-total"></div>
+              <div id="creditWarnings" class="warn-list"></div>
+              <div class="row-actions" style="margin-top:10px">
+                <button id="quickTransfer" class="btn ghost" type="button" data-i18n="home.transfer">⇄ Chuyển khoản</button>
+              </div>
+            </div>
           </div>
-          <div class="mascot-center">
-            <img id="mascotBalance" src="assets/mascot/sm/tiger_income.webp" alt="Mascot hổ thể hiện tình trạng số dư" width="80" height="80" />
-          </div>
-          <div id="balanceStatus" class="status-bar status--neutral" role="status" aria-live="polite">🙂 Cân bằng tốt. Giữ nhịp chi tiêu nhé!</div>
-          <div class="kpis" role="group" aria-label="Tổng kết tháng đang chọn">
-            <div class="kpi"><h4>Tổng thu (đ)</h4><div class="val" id="sumIncome">0</div></div>
-            <div class="kpi"><h4>Tổng chi (đ)</h4><div class="val" id="sumExpense">0</div></div>
-            <div class="kpi"><h4>Số dư (đ)</h4><div class="val" id="sumBalance">0</div></div>
-          </div>
-        </div>
-      </div>
 
-      <!-- Biểu đồ -->
-      <div class="card">
-        <div class="card-body">
-          <h2>Biểu đồ</h2>
-          <div class="mascot-center"><img id="mascotChart" src="assets/mascot/sm/tiger_spending.webp" alt="" width="80" height="80" /></div>
-          <div class="chart-controls">
-            <label for="chartMode" class="sr-only">Nội dung biểu đồ</label>
-            <select id="chartMode">
-              <option value="byCategory">Theo danh mục (Chi)</option>
-              <option value="totals">Tổng Thu vs Chi</option>
-              <option value="trend">Biến động theo tháng</option>
-            </select>
-            <label for="chartType" class="sr-only">Kiểu biểu đồ</label>
-            <select id="chartType">
-              <option value="doughnut">Donut</option>
-              <option value="bar">Cột</option>
-              <option value="line">Đường</option>
-            </select>
+          <div class="card">
+            <div class="card-body">
+              <h2 data-i18n="home.chart">Biểu đồ</h2>
+              <div class="mascot-center"><img id="mascotChart" src="assets/mascot/sm/tiger_spending.webp" alt="" width="80" height="80" /></div>
+              <div class="chart-controls">
+                <label for="chartMode" class="sr-only" data-i18n="home.chartMode">Nội dung biểu đồ</label>
+                <select id="chartMode">
+                  <option value="byCategory" data-i18n="chart.byCategory">Theo danh mục (Chi)</option>
+                  <option value="totals" data-i18n="chart.totals">Tổng Thu vs Chi</option>
+                  <option value="trend" data-i18n="chart.trend">Biến động theo tháng</option>
+                </select>
+                <label for="chartType" class="sr-only" data-i18n="home.chartType">Kiểu biểu đồ</label>
+                <select id="chartType">
+                  <option value="doughnut" data-i18n="chart.doughnut">Donut</option>
+                  <option value="bar" data-i18n="chart.bar">Cột</option>
+                  <option value="line" data-i18n="chart.line">Đường</option>
+                </select>
+              </div>
+              <div class="chart-box"><canvas id="chart" role="img" aria-label="Biểu đồ"></canvas></div>
+              <div id="chartScope" class="chart-scope" aria-live="polite"></div>
+            </div>
           </div>
-          <div class="chart-box"><canvas id="chart" role="img" aria-label="Biểu đồ chi tiêu"></canvas></div>
-          <div id="chartScope" class="chart-scope" aria-live="polite"></div>
-        </div>
-      </div>
 
-      <!-- Danh sách -->
-      <div class="card span-all">
-        <div class="card-body">
-          <div class="list-toolbar">
-            <h2 style="margin:0">Danh sách giao dịch</h2>
-            <span class="list-help">Chạm để sửa · Vuốt trái hoặc ✕ để xóa (có Hoàn tác 5 giây)</span>
+          <div class="card">
+            <div class="card-body">
+              <div class="card-head">
+                <h2 data-i18n="home.recent">Giao dịch gần đây</h2>
+                <a href="#/tx" class="btn ghost small" data-i18n="home.viewAll">Xem tất cả</a>
+              </div>
+              <div id="recentList" class="recent-list" role="list"></div>
+              <div id="recentEmpty" class="empty-state" style="display:none" data-i18n="home.recentEmpty">Chưa có giao dịch. Bấm ＋ để thêm.</div>
+            </div>
           </div>
-          <div id="listViewport" class="list-viewport" tabindex="0" role="region" aria-label="Danh sách giao dịch tháng đang chọn">
-            <div id="listCanvas" class="list-canvas" role="list"></div>
+
+          <div class="card">
+            <div class="card-body">
+              <div class="card-head">
+                <h2 data-i18n="home.upcoming">Định kỳ sắp tới</h2>
+                <a href="#/settings?section=recurring" class="btn ghost small" data-i18n="home.manageRecurring">Quản lý</a>
+              </div>
+              <div id="upcomingList" class="recent-list" role="list"></div>
+              <div id="upcomingEmpty" class="empty-state" style="display:none" data-i18n="home.upcomingEmpty">Chưa có giao dịch định kỳ (tiền nhà, internet, lương…).</div>
+            </div>
           </div>
-          <div id="emptyState" class="empty-state" style="display:none">Chưa có giao dịch nào trong tháng này.</div>
         </div>
-      </div>
-    </section>
+      </section>
+
+      <!-- ============ GIAO DỊCH ============ -->
+      <section data-view="tx" class="view" hidden aria-labelledby="tab-tx">
+        <div class="grid grid-tx">
+          <div class="card">
+            <div class="card-body">
+              <h2 id="addTitle" data-i18n="tx.addTitle">Thêm nhanh</h2>
+              <form id="addForm" class="quick-form" novalidate aria-labelledby="addTitle">
+                <div class="seg" role="radiogroup" data-i18n-aria="tx.type" aria-label="Loại giao dịch">
+                  <label><input type="radio" name="qType" value="expense" checked /><span data-i18n="tx.expense">Chi</span></label>
+                  <label><input type="radio" name="qType" value="income" /><span data-i18n="tx.income">Thu</span></label>
+                  <label><input type="radio" name="qType" value="transfer" /><span data-i18n="tx.transfer">Chuyển</span></label>
+                </div>
+                <div class="q-row">
+                  <div class="form-group q-amount">
+                    <label for="amount" data-i18n="tx.amount">Số tiền (đ)</label>
+                    <input id="amount" name="amount" type="text" inputmode="text" autocomplete="off" data-i18n-ph="tx.amountPh" placeholder="VD: 50k, 1tr5, 1.250.000" aria-describedby="amountHint" required />
+                    <div id="amountHint" class="hint" aria-live="polite"></div>
+                  </div>
+                  <div class="form-group q-cat" id="qCatGroup">
+                    <label for="qCategory" data-i18n="tx.category">Danh mục</label>
+                    <select id="qCategory" name="category"></select>
+                  </div>
+                  <div class="form-group q-cat" id="qToGroup" hidden>
+                    <label for="qToAccount" data-i18n="tx.toAccount">Đến ví</label>
+                    <select id="qToAccount" name="toAccount"></select>
+                  </div>
+                </div>
+                <div id="recentCats" class="chips" role="group" data-i18n-aria="tx.recentCats" aria-label="Danh mục dùng gần đây"></div>
+                <div class="q-row">
+                  <div class="form-group">
+                    <label for="qAccount" data-i18n="tx.account">Ví</label>
+                    <select id="qAccount" name="account"></select>
+                  </div>
+                  <div class="form-group">
+                    <label for="txDate" data-i18n="tx.date">Ngày</label>
+                    <input id="txDate" name="date" type="date" required />
+                  </div>
+                </div>
+                <div class="q-row">
+                  <div class="form-group">
+                    <label for="note" data-i18n="tx.note">Ghi chú</label>
+                    <input id="note" name="note" type="text" list="noteSuggest" autocomplete="off" data-i18n-ph="tx.notePh" placeholder="(tùy chọn)" />
+                    <datalist id="noteSuggest"></datalist>
+                  </div>
+                  <div class="form-group">
+                    <label for="qTags" data-i18n="tx.tags">Tag</label>
+                    <input id="qTags" name="tags" type="text" list="tagSuggest" autocomplete="off" data-i18n-ph="tx.tagsPh" placeholder="VD: du-lich, cong-ty" />
+                    <datalist id="tagSuggest"></datalist>
+                  </div>
+                </div>
+                <div id="formError" class="form-error" role="alert" aria-live="assertive"></div>
+                <div class="row-actions">
+                  <button id="add" class="btn primary" type="submit" data-i18n="tx.add">Thêm (Enter)</button>
+                  <button id="resetForm" class="btn ghost" type="button" data-i18n="tx.reset">Nhập lại</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <div class="card span-all">
+            <div class="card-body">
+              <div class="filter-bar">
+                <div class="search-wrap">
+                  <input id="fSearch" type="search" data-i18n-ph="filter.searchPh" placeholder="Tìm ghi chú, danh mục, ví, tag, số tiền…" data-i18n-aria="filter.search" aria-label="Tìm kiếm" autocomplete="off" />
+                </div>
+                <div class="preset-row" role="group" data-i18n-aria="filter.range" aria-label="Khoảng thời gian">
+                  <button class="chip" type="button" data-preset="thisMonth" data-i18n="filter.thisMonth">Tháng này</button>
+                  <button class="chip" type="button" data-preset="lastMonth" data-i18n="filter.lastMonth">Tháng trước</button>
+                  <button class="chip" type="button" data-preset="last30" data-i18n="filter.last30">30 ngày</button>
+                  <button class="chip" type="button" data-preset="thisYear" data-i18n="filter.thisYear">Năm nay</button>
+                  <button class="chip" type="button" data-preset="all" data-i18n="filter.all">Tất cả</button>
+                  <button id="fToggle" class="chip" type="button" aria-expanded="false" aria-controls="fAdvanced" data-i18n="filter.more">Bộ lọc ▾</button>
+                  <button id="fClear" class="chip" type="button" data-i18n="filter.clear" hidden>✕ Xóa lọc</button>
+                </div>
+                <div id="fAdvanced" class="f-advanced" hidden>
+                  <div class="form-group"><label for="fFrom" data-i18n="filter.from">Từ ngày</label><input id="fFrom" type="date" /></div>
+                  <div class="form-group"><label for="fTo" data-i18n="filter.to">Đến ngày</label><input id="fTo" type="date" /></div>
+                  <div class="form-group"><label for="fType" data-i18n="tx.type">Loại</label>
+                    <select id="fType"><option value="all" data-i18n="filter.allTypes">Tất cả</option><option value="expense" data-i18n="tx.expense">Chi</option><option value="income" data-i18n="tx.income">Thu</option><option value="transfer" data-i18n="tx.transfer">Chuyển</option></select></div>
+                  <div class="form-group"><label for="fAccount" data-i18n="tx.account">Ví</label><select id="fAccount"></select></div>
+                  <div class="form-group"><label for="fCategory" data-i18n="tx.category">Danh mục</label><select id="fCategory"></select></div>
+                  <div class="form-group"><label for="fTag" data-i18n="tx.tags">Tag</label><input id="fTag" type="text" list="tagSuggest" autocomplete="off" /></div>
+                  <div class="form-group"><label for="fMin" data-i18n="filter.min">Từ số tiền</label><input id="fMin" type="text" inputmode="text" placeholder="VD: 100k" /></div>
+                  <div class="form-group"><label for="fMax" data-i18n="filter.max">Đến số tiền</label><input id="fMax" type="text" inputmode="text" placeholder="VD: 5tr" /></div>
+                  <div class="form-group saved-filters">
+                    <label for="fSaved" data-i18n="filter.saved">Bộ lọc đã lưu</label>
+                    <div class="row-actions">
+                      <select id="fSaved"><option value="" data-i18n="filter.savedNone">— chọn —</option></select>
+                      <button id="fSave" class="btn ghost small" type="button" data-i18n="filter.save">💾 Lưu</button>
+                      <button id="fDelete" class="btn ghost small" type="button" data-i18n-aria="filter.delete" aria-label="Xóa bộ lọc đã lưu">🗑️</button>
+                    </div>
+                  </div>
+                </div>
+                <div id="fSummary" class="f-summary" aria-live="polite"></div>
+              </div>
+              <div class="list-toolbar">
+                <span class="list-help" data-i18n="tx.listHelp">Chạm để sửa · Vuốt trái hoặc ✕ để xóa (có Hoàn tác 5 giây)</span>
+                <button id="exportCSV" class="btn ghost small" type="button" data-i18n="tx.exportCSV">📄 Xuất CSV (kết quả lọc)</button>
+              </div>
+              <div id="listViewport" class="list-viewport" tabindex="0" role="region" data-i18n-aria="tx.list" aria-label="Danh sách giao dịch">
+                <div id="listCanvas" class="list-canvas" role="list"></div>
+              </div>
+              <div id="emptyState" class="empty-state" style="display:none"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ NGÂN SÁCH (P1b) ============ -->
+      <section data-view="budget" class="view" hidden aria-labelledby="tab-budget">
+        <div class="grid">
+          <div class="card">
+            <div class="card-body">
+              <h2 data-i18n="budget.spendByCat">Chi tiêu theo danh mục — tháng này</h2>
+              <div id="budgetCatBars" class="bars"></div>
+              <div id="budgetEmpty" class="empty-state" style="display:none" data-i18n="budget.empty">Chưa có chi tiêu tháng này.</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-body">
+              <h2 data-i18n="budget.comingTitle">Sắp ra mắt</h2>
+              <p class="muted" data-i18n="budget.comingBody">Ngân sách theo danh mục, quy tắc 50/30/20, quỹ khẩn cấp, mục tiêu tiết kiệm, quản lý nợ, tài sản ròng, dự báo dòng tiền và điểm sức khỏe tài chính sẽ có ở bản 2.2 (P1b/P1c). Danh mục đã có sẵn nhóm Thiết yếu / Mong muốn / Tiết kiệm để chuẩn bị.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ CÀI ĐẶT ============ -->
+      <section data-view="settings" class="view" hidden aria-labelledby="tab-settings">
+        <div class="grid grid-settings">
+          <div class="card" id="sec-appearance">
+            <div class="card-body">
+              <h2 data-i18n="settings.appearance">Giao diện &amp; ngôn ngữ</h2>
+              <div class="grid-2">
+                <div class="form-group"><label for="stTheme" data-i18n="settings.theme">Chế độ sáng/tối</label>
+                  <select id="stTheme"><option value="system" data-i18n="settings.themeSystem">Theo hệ thống</option><option value="light" data-i18n="settings.themeLight">Sáng</option><option value="dark" data-i18n="settings.themeDark">Tối</option></select></div>
+                <div class="form-group"><label for="stLocale" data-i18n="settings.language">Ngôn ngữ</label>
+                  <select id="stLocale"><option value="vi">Tiếng Việt</option><option value="en">English</option></select></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" id="sec-accounts">
+            <div class="card-body">
+              <div class="card-head"><h2 data-i18n="settings.accounts">Ví &amp; tài khoản</h2><button id="addAccount" class="btn primary small" type="button" data-i18n="settings.addAccount">＋ Thêm ví</button></div>
+              <div id="stAccountList" class="manage-list" role="list"></div>
+              <div class="form-group" style="margin-top:10px"><label for="stDefaultAccount" data-i18n="settings.defaultAccount">Ví mặc định khi thêm giao dịch</label><select id="stDefaultAccount"></select></div>
+            </div>
+          </div>
+
+          <div class="card" id="sec-categories">
+            <div class="card-body">
+              <div class="card-head"><h2 data-i18n="settings.categories">Danh mục</h2><button id="addCategory" class="btn primary small" type="button" data-i18n="settings.addCategory">＋ Thêm danh mục</button></div>
+              <div id="stCategoryTree" class="manage-list" role="list"></div>
+              <p class="hint" data-i18n="settings.categoryHint">Chạm để sửa. Danh mục con nằm dưới danh mục cha. Nhóm 50/30/20 dùng cho tab Ngân sách.</p>
+            </div>
+          </div>
+
+          <div class="card" id="sec-recurring">
+            <div class="card-body">
+              <div class="card-head"><h2 data-i18n="settings.recurring">Giao dịch định kỳ</h2><button id="addRule" class="btn primary small" type="button" data-i18n="settings.addRule">＋ Thêm</button></div>
+              <div id="stRuleList" class="manage-list" role="list"></div>
+              <p class="hint" data-i18n="settings.recurringHint">Tự sinh giao dịch đúng ngày; nếu bạn không mở app đúng ngày, các kỳ còn thiếu được bù khi mở lại. Xóa một giao dịch đã sinh sẽ không sinh lại. Có thể bỏ qua kỳ kế tiếp.</p>
+            </div>
+          </div>
+
+          <div class="card" id="sec-tier">
+            <div class="card-body">
+              <h2 data-i18n="settings.tier">Ngưỡng &amp; thông điệp mascot</h2>
+              <div class="grid-2">
+                <div class="form-group"><label for="stTh2" data-i18n="settings.th2">Tier 2 (Dư dả) — ≥ đ</label><input id="stTh2" type="text" inputmode="text" placeholder="5tr" /></div>
+                <div class="form-group"><label for="stTh3" data-i18n="settings.th3">Tier 3 (Siêu khá) — ≥ đ</label><input id="stTh3" type="text" inputmode="text" placeholder="10tr" /></div>
+                <div class="form-group"><label for="stTh4" data-i18n="settings.th4">Tier 4 (Đại gia) — ≥ đ</label><input id="stTh4" type="text" inputmode="text" placeholder="20tr" /></div>
+                <div class="form-group"><label for="stBest" data-i18n="settings.best">Kỷ lục cao nhất</label><input id="stBest" type="text" disabled /></div>
+              </div>
+              <div class="form-group"><label for="msgT0" data-i18n="settings.msg0">Thông điệp Tier 0 (Âm)</label><input id="msgT0" type="text" /></div>
+              <div class="form-group"><label for="msgT1" data-i18n="settings.msg1">Thông điệp Tier 1 (Dư nhẹ)</label><input id="msgT1" type="text" /></div>
+              <div class="form-group"><label for="msgT2" data-i18n="settings.msg2">Thông điệp Tier 2 (Dư dả)</label><input id="msgT2" type="text" /></div>
+              <div class="form-group"><label for="msgT3" data-i18n="settings.msg3">Thông điệp Tier 3 (Siêu khá)</label><input id="msgT3" type="text" /></div>
+              <div class="form-group"><label for="msgT4" data-i18n="settings.msg4">Thông điệp Tier 4 (Đại gia)</label><input id="msgT4" type="text" /></div>
+              <div class="row-actions" style="margin-top:8px"><button id="saveTier" class="btn primary" type="button" data-i18n="common.save">Lưu</button></div>
+            </div>
+          </div>
+
+          <div class="card" id="sec-data">
+            <div class="card-body">
+              <h2 data-i18n="settings.data">Dữ liệu &amp; sao lưu</h2>
+              <div class="data-actions">
+                <button id="backupJSON" class="btn ghost" type="button" data-i18n="data.backup">💾 Sao lưu JSON</button>
+                <button id="restoreJSON" class="btn ghost" type="button" data-i18n="data.restore">📂 Khôi phục JSON</button>
+                <button id="importCSV" class="btn ghost" type="button" data-i18n="data.importCSV">📥 Nhập CSV</button>
+                <button id="exportCSVAll" class="btn ghost" type="button" data-i18n="data.exportAll">📄 Xuất CSV (tất cả)</button>
+                <button id="clearAll" class="btn danger" type="button" data-i18n="data.clearAll">🗑️ Xóa tất cả giao dịch</button>
+              </div>
+              <div id="storageInfo" class="hint"></div>
+              <input id="fileJSON" type="file" accept="application/json,.json" class="sr-only" tabindex="-1" aria-hidden="true" />
+              <input id="fileCSV" type="file" accept="text/csv,.csv,text/plain" class="sr-only" tabindex="-1" aria-hidden="true" />
+              <hr class="sep" />
+              <p class="section-title" data-i18n="settings.privacy">Riêng tư</p>
+              <p class="hint" data-i18n="settings.privacyBody">Toàn bộ dữ liệu tài chính chỉ nằm trên thiết bị này (localStorage + IndexedDB của trình duyệt). App không gửi dữ liệu đi bất kỳ đâu, không có analytics. Sao lưu JSON định kỳ để phòng mất máy hoặc xóa dữ liệu trình duyệt.</p>
+              <p class="hint"><span id="appVersion"></span> · <a href="https://github.com/trile0000/moneymoney" target="_blank" rel="noopener">GitHub</a></p>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
 
-    <footer style="text-align:center;font-size:12px;color:var(--muted);margin:24px 0 8px">
-      Dữ liệu chỉ lưu trên thiết bị của bạn, không gửi đi đâu. · <span id="appVersion"></span>
-    </footer>
+    <footer class="app-footer"><span data-i18n="app.footer">Dữ liệu chỉ lưu trên thiết bị của bạn, không gửi đi đâu.</span></footer>
   </div>
 
-  <!-- Modal Cài đặt -->
-  <div id="settingsModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" aria-hidden="true">
-    <div class="panel">
-      <header><span id="settingsTitle">Cài đặt</span><button class="icon-btn" type="button" data-close aria-label="Đóng">✕</button></header>
-      <div class="content">
-        <p class="section-title">Lương định kỳ</p>
-        <div class="grid-2">
-          <div class="form-group"><label for="stSalary">Lương hàng tháng (đ)</label><input id="stSalary" type="text" inputmode="text" placeholder="VD: 15tr" aria-describedby="stSalaryHint" /><div id="stSalaryHint" class="hint"></div></div>
-          <div class="form-group"><label for="stSalaryCategory">Danh mục lương</label><input id="stSalaryCategory" type="text" placeholder="VD: Lương" value="Lương" /></div>
-        </div>
-        <div class="note-box">💡 Nếu lương &gt; 0, app tự thêm khoản thu vào ngày 1 mỗi tháng. Kể cả khi bạn không mở app đúng ngày, các tháng còn thiếu sẽ được bù khi mở lại (không thêm trùng nếu tháng đó đã có khoản thu đúng danh mục lương).</div>
-
-        <hr class="sep" />
-        <p class="section-title">Ngưỡng &amp; thông điệp</p>
-        <div class="grid-2">
-          <div class="form-group"><label for="stTh2">Tier 2 (Dư dả) — ≥ đ</label><input id="stTh2" type="text" inputmode="text" placeholder="5tr" /></div>
-          <div class="form-group"><label for="stTh3">Tier 3 (Siêu khá) — ≥ đ</label><input id="stTh3" type="text" inputmode="text" placeholder="10tr" /></div>
-          <div class="form-group"><label for="stTh4">Tier 4 (Đại gia) — ≥ đ</label><input id="stTh4" type="text" inputmode="text" placeholder="20tr" /></div>
-          <div class="form-group"><label for="stBest">Kỷ lục cao nhất</label><input id="stBest" type="text" disabled value="Chưa có" /></div>
-        </div>
-        <div class="form-group"><label for="msgT0">Thông điệp Tier 0 (Âm)</label><input id="msgT0" type="text" /></div>
-        <div class="form-group"><label for="msgT1">Thông điệp Tier 1 (Dư nhẹ)</label><input id="msgT1" type="text" /></div>
-        <div class="form-group"><label for="msgT2">Thông điệp Tier 2 (Dư dả)</label><input id="msgT2" type="text" /></div>
-        <div class="form-group"><label for="msgT3">Thông điệp Tier 3 (Siêu khá)</label><input id="msgT3" type="text" /></div>
-        <div class="form-group"><label for="msgT4">Thông điệp Tier 4 (Đại gia)</label><input id="msgT4" type="text" /></div>
-
-        <hr class="sep" />
-        <p class="section-title">Dữ liệu &amp; sao lưu</p>
-        <div class="data-actions">
-          <button id="backupJSON" class="btn ghost" type="button">💾 Sao lưu JSON</button>
-          <button id="restoreJSON" class="btn ghost" type="button">📂 Khôi phục JSON</button>
-          <button id="importCSV" class="btn ghost" type="button">📥 Nhập CSV</button>
-          <button id="exportCSVAll" class="btn ghost" type="button">📄 Xuất CSV (tất cả)</button>
-        </div>
-        <div id="storageInfo" class="hint"></div>
-        <input id="fileJSON" type="file" accept="application/json,.json" class="sr-only" tabindex="-1" aria-hidden="true" />
-        <input id="fileCSV" type="file" accept="text/csv,.csv,text/plain" class="sr-only" tabindex="-1" aria-hidden="true" />
-      </div>
-      <div class="actions">
-        <button id="closeSettings" class="btn ghost" type="button" data-close>Hủy</button>
-        <button id="saveSettings" class="btn primary" type="button">Lưu</button>
-      </div>
-    </div>
-  </div>
+  <!-- Thanh tab dưới cùng -->
+  <nav class="tabbar" data-i18n-aria="nav.main" aria-label="Điều hướng chính">
+    <a id="tab-home" href="#/home" class="tab" data-tab="home"><span class="tab-ic">🏠</span><span data-i18n="nav.home">Trang chủ</span></a>
+    <a id="tab-tx" href="#/tx" class="tab" data-tab="tx"><span class="tab-ic">🧾</span><span data-i18n="nav.tx">Giao dịch</span></a>
+    <a id="fab" href="#/tx?focus=amount" class="tab tab-fab" data-i18n-aria="nav.add" aria-label="Thêm giao dịch"><span class="fab-ic">＋</span></a>
+    <a id="tab-budget" href="#/budget" class="tab" data-tab="budget"><span class="tab-ic">🎯</span><span data-i18n="nav.budget">Ngân sách</span></a>
+    <a id="tab-settings" href="#/settings" class="tab" data-tab="settings"><span class="tab-ic">⚙️</span><span data-i18n="nav.settings2">Cài đặt</span></a>
+  </nav>
 
   <!-- Bottom sheet sửa giao dịch -->
   <div id="editSheet" class="modal sheet" role="dialog" aria-modal="true" aria-labelledby="editTitle" aria-hidden="true">
     <div class="panel">
-      <header><span id="editTitle">Sửa giao dịch</span><button class="icon-btn" type="button" data-close aria-label="Đóng">✕</button></header>
+      <header><span id="editTitle" data-i18n="edit.title">Sửa giao dịch</span><button class="icon-btn" type="button" data-close data-i18n-aria="common.close" aria-label="Đóng">✕</button></header>
       <form id="editForm" class="content" novalidate>
         <input type="hidden" id="edId" />
-        <div class="seg" role="radiogroup" aria-label="Loại giao dịch">
-          <label><input type="radio" name="edType" value="expense" /><span>Chi (−)</span></label>
-          <label><input type="radio" name="edType" value="income" /><span>Thu (+)</span></label>
+        <div class="seg" role="radiogroup" data-i18n-aria="tx.type" aria-label="Loại giao dịch">
+          <label><input type="radio" name="edType" value="expense" /><span data-i18n="tx.expense">Chi</span></label>
+          <label><input type="radio" name="edType" value="income" /><span data-i18n="tx.income">Thu</span></label>
+          <label><input type="radio" name="edType" value="transfer" /><span data-i18n="tx.transfer">Chuyển</span></label>
         </div>
         <div class="grid-2">
-          <div class="form-group"><label for="edDate">Ngày</label><input id="edDate" type="date" required /></div>
-          <div class="form-group"><label for="edAmount">Số tiền (đ)</label><input id="edAmount" type="text" inputmode="text" autocomplete="off" aria-describedby="edAmountHint" required data-autofocus /><div id="edAmountHint" class="hint" aria-live="polite"></div></div>
+          <div class="form-group"><label for="edAmount" data-i18n="tx.amount">Số tiền (đ)</label><input id="edAmount" type="text" inputmode="text" autocomplete="off" aria-describedby="edAmountHint" required data-autofocus /><div id="edAmountHint" class="hint" aria-live="polite"></div></div>
+          <div class="form-group"><label for="edDate" data-i18n="tx.date">Ngày</label><input id="edDate" type="date" required /></div>
+          <div class="form-group" id="edCatGroup"><label for="edCategory" data-i18n="tx.category">Danh mục</label><select id="edCategory"></select></div>
+          <div class="form-group" id="edToGroup" hidden><label for="edToAccount" data-i18n="tx.toAccount">Đến ví</label><select id="edToAccount"></select></div>
+          <div class="form-group"><label for="edAccount" data-i18n="tx.account">Ví</label><select id="edAccount"></select></div>
+          <div class="form-group"><label for="edTags" data-i18n="tx.tags">Tag</label><input id="edTags" type="text" list="tagSuggest" autocomplete="off" /></div>
         </div>
-        <div class="form-group"><label for="edCategory">Danh mục</label><input id="edCategory" type="text" list="categories" autocomplete="off" required /></div>
-        <div class="form-group"><label for="edNote">Ghi chú</label><textarea id="edNote" rows="2"></textarea></div>
+        <div class="form-group"><label for="edNote" data-i18n="tx.note">Ghi chú</label><input id="edNote" type="text" list="noteSuggest" autocomplete="off" /></div>
+        <div id="edMeta" class="hint"></div>
         <div id="edError" class="form-error" role="alert"></div>
       </form>
       <div class="actions">
-        <button id="edDelete" class="btn danger" type="button" style="margin-right:auto">🗑️ Xóa</button>
-        <button class="btn ghost" type="button" data-close>Hủy</button>
-        <button id="edSave" class="btn primary" type="button">Lưu</button>
+        <button id="edDelete" class="btn danger" type="button" style="margin-right:auto" data-i18n="edit.delete">🗑️ Xóa</button>
+        <button id="edDuplicate" class="btn ghost" type="button" data-i18n="edit.duplicate" data-i18n-title="edit.duplicateTitle" title="Tạo giao dịch mới giống hệt (ngày hôm nay)">⧉ Lặp lại</button>
+        <button class="btn ghost" type="button" data-close data-i18n="common.cancel">Hủy</button>
+        <button id="edSave" class="btn primary" type="button" data-i18n="common.save">Lưu</button>
       </div>
     </div>
   </div>
 
-  <!-- Hộp thoại xác nhận chung (2 bước cho Xóa tất cả) -->
+  <!-- Form sheet chung (ví / danh mục / định kỳ) -->
+  <div id="formSheet" class="modal sheet" role="dialog" aria-modal="true" aria-labelledby="formSheetTitle" aria-hidden="true">
+    <div class="panel">
+      <header><span id="formSheetTitle"></span><button class="icon-btn" type="button" data-close data-i18n-aria="common.close" aria-label="Đóng">✕</button></header>
+      <form id="formSheetForm" class="content" novalidate></form>
+      <div class="actions">
+        <button id="fsDelete" class="btn danger" type="button" style="margin-right:auto;display:none"></button>
+        <button id="fsExtra" class="btn ghost" type="button" style="display:none"></button>
+        <button class="btn ghost" type="button" data-close data-i18n="common.cancel">Hủy</button>
+        <button id="fsSave" class="btn primary" type="button" data-i18n="common.save">Lưu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hộp thoại xác nhận chung -->
   <div id="confirmModal" class="modal" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmBody" aria-hidden="true">
     <div class="panel">
-      <header><span id="confirmTitle">Xác nhận</span></header>
+      <header><span id="confirmTitle"></span></header>
       <div class="content">
         <div id="confirmBody"></div>
         <label id="confirmCheckWrap" style="display:none;align-items:center;gap:8px;font-size:14px;color:var(--text)"><input id="confirmCheck" type="checkbox" style="width:auto" /> <span id="confirmCheckLabel"></span></label>
       </div>
       <div class="actions">
         <button id="confirmExtra" class="btn ghost" type="button" style="margin-right:auto;display:none"></button>
-        <button id="confirmCancel" class="btn ghost" type="button" data-close>Hủy</button>
-        <button id="confirmOk" class="btn danger" type="button">Đồng ý</button>
+        <button id="confirmCancel" class="btn ghost" type="button" data-close data-i18n="common.cancel">Hủy</button>
+        <button id="confirmOk" class="btn danger" type="button"></button>
       </div>
     </div>
   </div>
 
   <div id="undoBar" class="snackbar" role="status" aria-live="polite">
-    <span id="undoText">Đã xóa</span>
+    <span id="undoText"></span>
     <span id="undoCount" class="count">5</span>
-    <button id="undoBtn" class="btn" type="button">Hoàn tác</button>
+    <button id="undoBtn" class="btn" type="button" data-i18n="undo.btn">Hoàn tác</button>
   </div>
   <div id="appToast" class="toast" role="status" aria-live="polite"></div>
 

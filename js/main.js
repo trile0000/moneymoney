@@ -1,247 +1,131 @@
-// Điểm vào ứng dụng — nối state ↔ UI. Không chứa logic nghiệp vụ (nằm ở features/), không innerHTML.
+// Điểm vào ứng dụng (v2.1 / P1a): boot, router, luồng dùng chung (thêm/sửa/xóa/undo/nhập/xuất/xóa tất cả), theme, i18n, SW.
 import { APP_VERSION } from './version.js';
-import { loadAll, onStorageEvent, estimateUsage } from './storage.js';
+import { loadAll, onStorageEvent } from './storage.js';
 import * as S from './state.js';
-import { $, $$, el, clear } from './utils/dom.js';
-import { formatVND, parseAmount } from './utils/money.js';
-import { toLocalYMD, toLocalYM, isValidYMD, isValidYM, addMonths, monthLabel } from './utils/date.js';
-import { computeSalaryBackfill } from './features/recurring.js';
-import { tierOf, tierMessage, mascotFor, evaluateAchievement } from './features/achievements.js';
+import { $, el } from './utils/dom.js';
+import { formatVND } from './utils/money.js';
+import { toLocalYMD } from './utils/date.js';
 import { transactionsToCSV, backupToJSON, downloadText, parseTransactionsCSV, dedupeAgainst, parseBackupJSON } from './features/importExport.js';
+import { pathName } from './features/categories.js';
+import { t, setLocale, applyI18n, getLocale } from './i18n.js';
+import { applyTheme, nextTheme, onThemeChange } from './ui/theme.js';
 import { showToast } from './ui/toast.js';
-import { fireConfetti } from './ui/confetti.js';
-import { openModal } from './ui/modal.js';
 import { confirmDialog } from './ui/confirm.js';
 import { openEditSheet } from './ui/editSheet.js';
-import { createVirtualList } from './ui/list.js';
-import { bindListGestures } from './ui/gestures.js';
-import { renderChart } from './ui/charts.js';
-import { bindAmountInput } from './ui/amountInput.js';
 import { initUndo, queueUndo, commit as commitUndo } from './ui/undo.js';
 import { registerSW } from './ui/swUpdate.js';
+import { startRouter, onView, navigate, currentView } from './router.js';
+import { initHome, renderHome, resetAchievementState } from './views/home.js';
+import { initTx, renderTx } from './views/tx.js';
+import { renderBudget } from './views/budget.js';
+import { initSettings, renderSettings, openCategoryForm, openAccountForm, openRuleForm } from './views/settings.js';
 
-const ASSET = 'assets/mascot/sm/';
-const els = {};
-let list = null;
-let amountCtl = null;
-let prevCurrentTier = null; // tier tháng hiện tại lần render trước (chỉ dùng cho thành tựu)
-let lastMascotPick = null;
+let version = 0; // tăng mỗi lần dữ liệu đổi (để virtual list biết cần dựng lại dòng)
+const dirty = { home: true, tx: true, budget: true, settings: true };
+
+const ctx = {
+  editFlow, deleteFlow, refresh, exportCSV: doExportCSV, openCategoryForm, openAccountForm, openRuleForm,
+  applyTheme: () => { applyTheme(S.getSettings().theme); refresh('theme'); },
+  applyLocale: () => { setLocale(S.getSettings().locale); applyI18n(); refresh('settings'); },
+  version: () => version,
+};
 
 // ---------- Khởi động ----------
 (async function boot() {
-  cacheEls();
-  $('#appVersion').textContent = 'v' + APP_VERSION;
-  window.addEventListener('error', (e) => { console.error(e.error || e.message); showToast('Lỗi: ' + (e.message || 'JS error'), { kind: 'error' }); });
-  window.addEventListener('unhandledrejection', (e) => { console.error(e.reason); showToast('Lỗi: ' + (e.reason && e.reason.message || 'Promise'), { kind: 'error' }); });
+  window.addEventListener('error', (e) => { console.error(e.error || e.message); showToast(t('common.error') + ': ' + (e.message || 'JS error'), { kind: 'error' }); });
+  window.addEventListener('unhandledrejection', (e) => { console.error(e.reason); showToast(t('common.error') + ': ' + (e.reason && e.reason.message || 'Promise'), { kind: 'error' }); });
 
-  const { data, settings, migrated, source } = await loadAll();
+  const { data, settings, migrated, fromVersion, source } = await loadAll();
   S.init({ data, settings });
-  if (migrated) showToast(`✅ Đã nâng cấp dữ liệu (${data.transactions.length} giao dịch), bản cũ vẫn được giữ nguyên.`, { duration: 5000 });
-  if (source === 'indexedDB') showToast('ℹ️ Đã khôi phục dữ liệu từ IndexedDB.', { kind: 'warn', duration: 5000 });
+  setLocale(settings.locale);
+  applyI18n();
+  applyTheme(settings.theme);
+  onThemeChange(() => { if (currentView() === 'home') renderHome('chart'); });
 
   onStorageEvent((ev) => {
-    if (ev.type === 'quota') showToast(ev.idb ? '⚠️ Bộ nhớ localStorage đầy — dữ liệu vẫn được lưu vào IndexedDB. Hãy Sao lưu JSON ngay.' : '❌ KHÔNG LƯU ĐƯỢC dữ liệu (bộ nhớ đầy). Hãy Sao lưu JSON ngay!', { kind: 'error', duration: 8000 });
-    else if (ev.type === 'error') showToast(ev.idb ? '⚠️ localStorage lỗi, đã lưu vào IndexedDB.' : '❌ Không lưu được dữ liệu!', { kind: 'error', duration: 8000 });
+    if (ev.type === 'quota') showToast(t(ev.idb ? 'toast.quotaIdb' : 'toast.quotaFail'), { kind: 'error', duration: 8000 });
+    else if (ev.type === 'error') showToast(t(ev.idb ? 'toast.lsErrIdb' : 'toast.lsErr'), { kind: 'error', duration: 8000 });
   });
 
-  const today = toLocalYMD();
-  els.txDate.value = today;
-  els.filterMonth.value = today.slice(0, 7);
-  amountCtl = bindAmountInput(els.amount, els.amountHint);
-
-  list = createVirtualList(els.listViewport, els.listCanvas, { onEdit: editFlow, onDelete: deleteFlow });
-  bindListGestures(els.listViewport, { onEdit: editFlow, onDelete: deleteFlow });
+  initHome(ctx);
+  initTx(ctx);
+  initSettings(ctx);
   initUndo({
     onCommit: async (ids) => { await S.purgeDeleted(ids); },
-    onUndo: async (ids) => { for (const id of ids) await S.restore(id); render('data'); showToast('↩️ Đã hoàn tác'); },
+    onUndo: async (ids) => { for (const id of ids) await S.restore(id); refresh('data'); showToast(t('undo.done')); },
   });
-
-  bindEvents();
+  bindGlobal();
   updateOnline();
-  await runSalaryBackfill();
-  render('init');
+
+  // Định kỳ đến hạn (kể cả kỳ còn thiếu)
+  const added = await S.runRecurringNow();
+  if (added.length) toastRecurring(added);
+
+  onView('home', (p, info) => { if (info.changed || dirty.home) { renderHome(info.changed && !dirty.home ? 'chart' : 'init'); dirty.home = false; } });
+  onView('tx', (p, info) => { renderTx(info.changed ? p : {}); dirty.tx = false; });
+  onView('budget', () => { renderBudget(); dirty.budget = false; });
+  onView('settings', (p, info) => { renderSettings(info.changed ? p : {}); dirty.settings = false; });
+  startRouter();
   registerSW();
+
+  if (migrated && fromVersion === 1) showToast(t('toast.migratedV1', { n: data.transactions.length }), { duration: 6000 });
+  else if (migrated && fromVersion === 2) showToast(t('toast.migratedV2', { acc: (data.accounts[0] || {}).name || 'Tiền mặt', c: data.categories.length }), { duration: 7000 });
+  if (source === 'indexedDB') showToast(t('toast.recovered'), { kind: 'warn', duration: 5000 });
 })();
 
-function cacheEls() {
-  const ids = ['listViewport', 'listCanvas', 'emptyState', 'sumIncome', 'sumExpense', 'sumBalance', 'chart', 'chartType', 'chartMode', 'chartScope',
-    'mascotBalance', 'mascotChart', 'balanceStatus', 'txDate', 'filterMonth', 'txCount', 'amount', 'amountHint', 'category', 'note', 'type',
-    'addForm', 'formError', 'recentCats', 'settingsModal', 'storageInfo'];
-  for (const id of ids) els[id] = $('#' + id);
+function toastRecurring(added) {
+  if (added.length === 1) showToast(t('toast.recurring1', { name: added[0].note || added[0].category || '', amount: formatVND(added[0].amount), date: added[0].date }), { duration: 5000 });
+  else showToast(t('toast.recurringN', { n: added.length }), { duration: 5000 });
 }
 
-// ---------- Render ----------
-function currentMonthKey() {
-  const v = els.filterMonth.value;
-  return isValidYM(v) ? v : '';
-}
-function monthData(key) {
-  if (key) return S.getMonth(key);
-  const items = S.getVisible();
-  let income = 0, expense = 0;
-  for (const t of items) { if (t.type === 'income') income += t.amount; else expense += t.amount; }
-  return { income, expense, count: items.length, items };
+/** Gọi sau mọi thay đổi dữ liệu / cài đặt: đánh dấu bẩn & render lại view đang mở */
+function refresh(reason = 'data') {
+  if (reason === 'data') version++;
+  dirty.home = dirty.tx = dirty.budget = dirty.settings = true;
+  const v = currentView();
+  if (v === 'home') { renderHome(reason === 'theme' ? 'chart' : reason); dirty.home = false; }
+  else if (v === 'tx') { renderTx(); dirty.tx = false; }
+  else if (v === 'budget') { renderBudget(); dirty.budget = false; }
+  else if (v === 'settings') { renderSettings(); dirty.settings = false; }
 }
 
-/** reason: 'init' | 'data' | 'filter' | 'settings' | 'chart' */
-function render(reason = 'data') {
-  const key = currentMonthKey();
-  const m = monthData(key);
-  const settings = S.getSettings();
-
-  // KPI
-  setKpi(els.sumIncome, m.income);
-  setKpi(els.sumExpense, m.expense);
-  setKpi(els.sumBalance, m.income - m.expense);
-  els.txCount.textContent = `${m.count} giao dịch`;
-
-  // Tier HIỂN THỊ theo tháng đang xem
-  const balance = m.income - m.expense;
-  const tier = tierOf(balance, settings.thresholds);
-  const pick = mascotFor(tier);
-  if (pick.file !== lastMascotPick) {
-    els.mascotBalance.classList.remove('mascot-animate');
-    void els.mascotBalance.offsetWidth;
-    els.mascotBalance.classList.add('mascot-animate');
-    lastMascotPick = pick.file;
-  }
-  els.mascotBalance.src = ASSET + pick.file + '.webp';
-  els.balanceStatus.className = 'status-bar status--' + pick.status;
-  els.balanceStatus.textContent = tierMessage(tier, balance, settings.messages, formatVND);
-  els.mascotChart.src = ASSET + (els.chartMode.value === 'byCategory' ? 'tiger_spending' : 'tiger_income') + '.webp';
-
-  // THÀNH TỰU: chỉ theo tháng hiện tại & khi dữ liệu thật đổi (sửa lỗi #11)
-  if (reason === 'init' || reason === 'data' || reason === 'settings') {
-    const cur = S.getMonth(toLocalYM());
-    const curTier = tierOf(cur.income - cur.expense, settings.thresholds);
-    const ev = evaluateAchievement({ tier: curTier, prevTier: prevCurrentTier, bestTier: settings.bestTier, isCurrentMonth: true, reason });
-    if (ev.confetti) fireConfetti(curTier);
-    if (ev.newBest) { S.updateSettings({ bestTier: curTier, bestTierMonth: toLocalYM() }, { silent: true }); showToast('🎉 Kỷ lục mới: Tier ' + curTier); }
-    prevCurrentTier = curTier;
-  }
-
-  // Biểu đồ
-  renderChart({ canvas: els.chart, scopeEl: els.chartScope, mode: els.chartMode.value, type: els.chartType.value, monthKey: key, month: m, monthIndex: S.getMonthIndex() });
-
-  // Danh sách
-  list.setItems(m.items);
-  els.emptyState.style.display = m.items.length ? 'none' : 'flex';
-  els.emptyState.textContent = key ? `Chưa có giao dịch nào trong ${monthLabel(key)}.` : 'Chưa có giao dịch nào.';
-  els.listCanvas.setAttribute('aria-label', `Danh sách giao dịch ${key ? monthLabel(key) : 'tất cả'} (${m.items.length})`);
-
-  if (reason !== 'chart' && reason !== 'filter') renderRecentCats();
-}
-
-/** Ghi số KPI và tự thu nhỏ chữ nếu không vừa ô (số rất lớn trên màn hình hẹp) */
-function setKpi(node, value) {
-  node.textContent = formatVND(value, { withUnit: false });
-  node.style.fontSize = '';
-  let size = parseFloat(getComputedStyle(node).fontSize) || 16;
-  let guard = 0;
-  while (node.scrollWidth > node.clientWidth + 1 && size > 10 && guard++ < 8) {
-    size -= 1;
-    node.style.fontSize = size + 'px';
-  }
-}
-
-function renderRecentCats() {
-  const cats = S.getCategoryStats().slice(0, 6);
-  clear(els.recentCats);
-  for (const c of cats) {
-    els.recentCats.appendChild(el('button', { className: 'chip', type: 'button', text: c, on: { click: () => { els.category.value = c; els.amount.focus(); } } }));
-  }
-}
-
-// ---------- Lương định kỳ ----------
-async function runSalaryBackfill() {
-  const s = S.getSettings();
-  const { toAdd, lastSalaryPeriod } = computeSalaryBackfill({ settings: s, transactions: S.getAllRaw(), todayYM: toLocalYM() });
-  if (toAdd.length) await S.addMany(toAdd, { source: 'auto-salary' });
-  if (lastSalaryPeriod !== s.lastSalaryPeriod) await S.updateSettings({ lastSalaryPeriod }, { silent: true });
-  if (toAdd.length) showToast(toAdd.length === 1 ? `💰 Đã tự động thêm lương ${monthLabel(toAdd[0].periodKey)}` : `💰 Đã bù ${toAdd.length} kỳ lương còn thiếu (${toAdd.map((t) => monthLabel(t.periodKey)).join(', ')})`, { duration: 5000 });
-  return toAdd.length;
-}
-
-// ---------- CRUD flows ----------
-async function addFlow(e) {
-  e && e.preventDefault();
-  els.formError.textContent = '';
-  const amount = amountCtl.getValue();
-  const category = els.category.value.trim();
-  const date = els.txDate.value;
-  const type = els.type.value === 'income' ? 'income' : 'expense';
-  const note = els.note.value.trim();
-  // Validate (sửa lỗi #9)
-  if (!amount || amount <= 0) return fail('Số tiền phải lớn hơn 0 (VD: 50k, 1tr5, 1.250.000)', els.amount);
-  if (!category) return fail('Vui lòng nhập danh mục', els.category);
-  if (!isValidYMD(date)) return fail('Ngày không hợp lệ', els.txDate);
-  await S.addTransaction({ type, amount, category, note, date, source: 'manual' });
-  amountCtl.clear();
-  els.note.value = '';
-  els.category.value = '';
-  $$('[aria-invalid]', els.addForm).forEach((n) => n.removeAttribute('aria-invalid'));
-  // Nếu tháng đang lọc khác tháng của giao dịch vừa thêm → nhảy sang tháng đó để người dùng thấy ngay
-  if (currentMonthKey() && currentMonthKey() !== date.slice(0, 7)) els.filterMonth.value = date.slice(0, 7);
-  render('data');
-  showToast(`✅ Đã thêm ${type === 'income' ? 'khoản thu' : 'khoản chi'} ${formatVND(amount)}`);
-  els.category.focus();
-  function fail(msg, focusEl) { els.formError.textContent = msg; if (focusEl) { focusEl.setAttribute('aria-invalid', 'true'); focusEl.focus(); } return false; }
-}
-
+// ---------- CRUD flows dùng chung ----------
 async function deleteFlow(id) {
-  const t = S.getById(id);
-  if (!t) return;
+  const tx = S.getById(id);
+  if (!tx) return;
   await S.softDelete(id);
-  render('data');
-  queueUndo(id, `${t.category} ${formatVND(t.amount)}`);
+  refresh('data');
+  const cat = tx.type !== 'transfer' ? S.getCategoryById(tx.categoryId) : null;
+  queueUndo(id, `${cat ? cat.name : (tx.type === 'transfer' ? t('tx.transfer') : tx.category)} ${formatVND(tx.amount)}`);
 }
-
 function editFlow(id) {
-  const t = S.getById(id);
-  if (!t) return;
-  openEditSheet(t, {
-    onSave: async (tid, patch) => { await S.updateTransaction(tid, patch); render('data'); showToast('✅ Đã cập nhật'); },
+  const tx = S.getById(id);
+  if (!tx) return;
+  openEditSheet(tx, {
+    onSave: async (tid, patch) => { await S.updateTransaction(tid, patch); refresh('data'); showToast(t('edit.updated')); },
     onDelete: deleteFlow,
+    onDuplicate: async (orig, patch) => {
+      await S.addTransaction({ ...patch, date: toLocalYMD(), source: 'manual' });
+      refresh('data');
+      showToast(t('edit.duplicated'));
+    },
+    onNewCategory: (type) => openCategoryForm(null, { kind: type === 'income' ? 'income' : 'expense' }),
   });
 }
 
-// ---------- Xóa tất cả (2 bước + gợi ý backup, sửa lỗi #4) ----------
-async function clearAllFlow() {
-  const n = S.getVisible().length;
-  if (!n) { showToast('Không có giao dịch nào để xóa'); return; }
-  const step1 = await confirmDialog({
-    title: 'Xóa tất cả giao dịch?',
-    body: `Bạn sắp xóa ${n} giao dịch. Việc này KHÔNG thể hoàn tác.\nHãy sao lưu trước — bấm "Sao lưu JSON" bên dưới, file sẽ tải về máy.`,
-    okText: 'Tôi đã sao lưu, tiếp tục', okClass: 'primary',
-    extraText: '💾 Sao lưu JSON', onExtra: doBackup,
-  });
-  if (!step1) return;
-  const step2 = await confirmDialog({
-    title: 'Xác nhận lần cuối',
-    body: `Xóa vĩnh viễn ${n} giao dịch? Cài đặt (lương, ngưỡng, thông điệp) vẫn được giữ.`,
-    okText: 'Xóa vĩnh viễn', okClass: 'danger',
-    requireCheck: true, checkLabel: 'Tôi hiểu toàn bộ giao dịch sẽ bị xóa và không thể khôi phục nếu chưa sao lưu.',
-  });
-  if (!step2) return;
-  commitUndo();
-  await S.clearAllTransactions();
-  prevCurrentTier = null;
-  render('data');
-  showToast('🗑️ Đã xóa tất cả giao dịch');
+// ---------- Xuất / nhập / sao lưu ----------
+function csvCtx() {
+  const cats = S.getCategories({ includeArchived: true });
+  return { accountName: (id) => { const a = S.getAccountById(id); return a ? a.name : ''; }, categoryPath: (id, tx) => (id ? pathName(cats, id) || tx.category : tx.category) };
 }
-
-// ---------- Xuất / nhập ----------
-function doExportCSV(all = false) {
-  const key = currentMonthKey();
-  const items = all || !key ? S.getVisible() : S.getMonth(key).items;
-  if (!items.length) { showToast('Không có giao dịch để xuất', { kind: 'warn' }); return; }
-  const name = all || !key ? `moneymoney-tatca-${toLocalYMD()}.csv` : `moneymoney-${key}.csv`;
-  downloadText(transactionsToCSV(items), name, 'text/csv;charset=utf-8;');
-  showToast(`📄 Đã xuất ${items.length} giao dịch`);
+function doExportCSV(items, tag = 'tatca') {
+  if (!items || !items.length) { showToast(t('data.exportNone'), { kind: 'warn' }); return; }
+  downloadText(transactionsToCSV(items, csvCtx()), `moneymoney-${tag}-${toLocalYMD()}.csv`, 'text/csv;charset=utf-8;');
+  showToast(t('data.exported', { n: items.length }));
 }
 function doBackup() {
-  downloadText(backupToJSON({ transactions: S.getAllRaw(), meta: S.getMeta() }, S.getSettings()), `moneymoney-backup-${toLocalYMD()}.json`, 'application/json;charset=utf-8');
-  showToast('💾 Đã tải file sao lưu');
+  downloadText(backupToJSON(S.getData(), S.getSettings()), `moneymoney-backup-${toLocalYMD()}.json`, 'application/json;charset=utf-8');
+  showToast(t('data.backupDone'));
 }
 function pickFile(inputEl) {
   return new Promise((resolve) => {
@@ -254,115 +138,106 @@ function pickFile(inputEl) {
 async function importCSVFlow() {
   const file = await pickFile($('#fileCSV'));
   if (!file) return;
-  const text = await file.text();
-  const { items, errors } = parseTransactionsCSV(text);
-  if (!items.length) { await confirmDialog({ title: 'Không nhập được', body: errors.slice(0, 8).join('\n') || 'File không có dòng hợp lệ', okText: 'Đóng', okClass: 'primary' }); return; }
+  const { items, errors } = parseTransactionsCSV(await file.text());
+  if (!items.length) { await confirmDialog({ title: t('data.importFail'), body: errors.slice(0, 8).join('\n') || t('data.importNoRows'), okText: t('common.close'), okClass: 'primary' }); return; }
+  // ánh xạ tên ví → id (tạo mới nếu chưa có? không — dùng ví mặc định), tên danh mục → id (tự tạo)
+  const accByName = new Map(S.getAccounts({ includeArchived: true }).map((a) => [a.name.trim().toLowerCase(), a.id]));
+  const def = S.getSettings().defaultAccountId;
+  for (const it of items) {
+    it.accountId = accByName.get(String(it.accountName || '').trim().toLowerCase()) || def;
+    if (it.type === 'transfer') { it.toAccountId = accByName.get(String(it.toAccountName || '').trim().toLowerCase()) || null; if (!it.toAccountId || it.toAccountId === it.accountId) { it.type = 'expense'; } }
+  }
   const { fresh, dupes } = dedupeAgainst(items, S.getAllRaw());
-  const preview = fresh.slice(0, 5).map((t) => `• ${t.date} ${t.type === 'income' ? '+' : '−'}${formatVND(t.amount)} ${t.category}${t.note ? ' — ' + t.note : ''}`).join('\n');
+  const preview = fresh.slice(0, 5).map((x) => `• ${x.date} ${x.type === 'income' ? '+' : x.type === 'expense' ? '−' : '⇄'}${formatVND(x.amount)} ${x.category}${x.note ? ' — ' + x.note : ''}`).join('\n');
   const ok = await confirmDialog({
-    title: 'Nhập CSV',
-    body: `Đọc được ${items.length} dòng, ${dupes} trùng (bỏ qua), sẽ thêm ${fresh.length} giao dịch.${errors.length ? `\n${errors.length} dòng lỗi bị bỏ qua.` : ''}\n\n${preview}${fresh.length > 5 ? '\n…' : ''}`,
-    okText: `Thêm ${fresh.length} giao dịch`, okClass: 'primary',
+    title: t('data.importTitle'),
+    body: t('data.importBody', { total: items.length, dupes, fresh: fresh.length, errors: errors.length ? t('data.importErrors', { n: errors.length }) : '', preview: preview + (fresh.length > 5 ? '\n…' : '') }),
+    okText: t('data.importOk', { n: fresh.length }), okClass: 'primary',
   });
   if (!ok || !fresh.length) return;
   const n = await S.addMany(fresh, { source: 'import' });
-  render('data');
-  showToast(`📥 Đã nhập ${n} giao dịch`);
+  refresh('data');
+  showToast(t('data.imported', { n }));
 }
 async function restoreJSONFlow() {
   const file = await pickFile($('#fileJSON'));
   if (!file) return;
   let parsed;
   try { parsed = parseBackupJSON(await file.text()); }
-  catch (e) { await confirmDialog({ title: 'Không đọc được file', body: e.message, okText: 'Đóng', okClass: 'primary' }); return; }
+  catch (e) { await confirmDialog({ title: t('data.restoreFail'), body: e.message, okText: t('common.close'), okClass: 'primary' }); return; }
   const cur = S.getVisible().length;
   const ok = await confirmDialog({
-    title: 'Khôi phục sao lưu',
-    body: `File có ${parsed.transactions.length} giao dịch${parsed.settings ? ' + cài đặt' : ''}. Hiện app đang có ${cur} giao dịch.\n\n• "Gộp": chỉ thêm giao dịch chưa có (theo id/vân tay), giữ nguyên dữ liệu hiện tại.\n• "Thay thế": xóa toàn bộ dữ liệu hiện tại rồi nạp từ file.`,
-    okText: 'Thay thế toàn bộ', okClass: 'danger',
-    extraText: 'Gộp (chỉ thêm mới)', extraResolves: true,
-    requireCheck: true, checkLabel: 'Tôi hiểu "Thay thế" sẽ xóa dữ liệu hiện tại.',
+    title: t('data.restoreTitle'),
+    body: t('data.restoreBody', { n: parsed.transactions.length, settings: parsed.settings ? t('data.restoreSettings') : '', a: parsed.data.accounts.length, c: parsed.data.categories.length, cur }),
+    okText: t('data.restoreReplace'), okClass: 'danger',
+    extraText: t('data.restoreMerge'), extraResolves: true,
+    requireCheck: true, checkLabel: t('data.restoreCheck'),
   });
   if (ok === 'extra') {
-    const { fresh, dupes } = dedupeAgainst(parsed.transactions, S.getAllRaw());
+    // Gộp: thêm ví/danh mục còn thiếu (theo tên) rồi giao dịch mới
+    const accMap = new Map();
+    for (const a of parsed.data.accounts) {
+      const found = S.getAccounts({ includeArchived: true }).find((x) => x.name.trim().toLowerCase() === a.name.trim().toLowerCase());
+      accMap.set(a.id, found ? found.id : (await S.addAccount({ ...a, id: undefined })).id);
+    }
+    const catMap = new Map();
+    for (const c of parsed.data.categories) {
+      const found = S.getCategories({ includeArchived: true }).find((x) => x.name.trim().toLowerCase() === c.name.trim().toLowerCase() && !x.parentId);
+      catMap.set(c.id, found ? found.id : (await S.addCategory({ ...c, id: undefined, parentId: null })).id);
+    }
+    const items = parsed.transactions.map((x) => ({ ...x, accountId: accMap.get(x.accountId) || S.getSettings().defaultAccountId, toAccountId: x.toAccountId ? accMap.get(x.toAccountId) : undefined, categoryId: x.categoryId ? catMap.get(x.categoryId) : undefined }));
+    const { fresh, dupes } = dedupeAgainst(items, S.getAllRaw());
     const n = await S.addMany(fresh, { source: 'import' });
-    render('data');
-    showToast(`📂 Đã gộp ${n} giao dịch mới (${dupes} trùng)`);
+    refresh('data');
+    showToast(t('data.merged', { n, d: dupes }));
     return;
   }
   if (!ok) return;
   commitUndo();
-  await S.replaceAll(parsed.transactions, parsed.meta);
+  await S.replaceData(parsed.data);
   if (parsed.settings) await S.updateSettings(parsed.settings, { silent: true });
-  prevCurrentTier = null;
-  render('data');
-  showToast(`📂 Đã khôi phục ${parsed.transactions.length} giao dịch`);
+  setLocale(S.getSettings().locale); applyI18n(); applyTheme(S.getSettings().theme);
+  resetAchievementState();
+  refresh('data');
+  showToast(t('data.restored', { n: parsed.transactions.length }));
+}
+async function clearAllFlow() {
+  const n = S.getVisible().length;
+  if (!n) { showToast(t('clear.none')); return; }
+  const step1 = await confirmDialog({ title: t('clear.title1'), body: t('clear.body1', { n }), okText: t('clear.ok1'), okClass: 'primary', extraText: t('data.backup'), onExtra: doBackup });
+  if (!step1) return;
+  const step2 = await confirmDialog({ title: t('clear.title2'), body: t('clear.body2', { n }), okText: t('clear.ok2'), okClass: 'danger', requireCheck: true, checkLabel: t('clear.check2') });
+  if (!step2) return;
+  commitUndo();
+  await S.clearAllTransactions();
+  resetAchievementState();
+  refresh('data');
+  showToast(t('clear.done'));
 }
 
-// ---------- Cài đặt ----------
-const stCtl = {};
-function openSettings() {
-  const s = S.getSettings();
-  if (!stCtl.salary) {
-    stCtl.salary = bindAmountInput($('#stSalary'), $('#stSalaryHint'));
-    for (const k of ['stTh2', 'stTh3', 'stTh4']) { const h = el('div', { className: 'hint' }); $('#' + k).after(h); stCtl[k] = bindAmountInput($('#' + k), h); }
-  }
-  stCtl.salary.setValue(s.salary || 0);
-  $('#stSalaryCategory').value = s.salaryCategory || 'Lương';
-  stCtl.stTh2.setValue(s.thresholds.t2); stCtl.stTh3.setValue(s.thresholds.t3); stCtl.stTh4.setValue(s.thresholds.t4);
-  $('#stBest').value = s.bestTier ? `Tier ${s.bestTier}${s.bestTierMonth ? ' (' + monthLabel(s.bestTierMonth) + ')' : ''}` : 'Chưa có';
-  for (let i = 0; i <= 4; i++) $('#msgT' + i).value = s.messages['t' + i] || '';
-  const kb = estimateUsage() / 1024;
-  els.storageInfo.textContent = `Đang dùng ~${kb.toFixed(0)} KB localStorage · ${S.getVisible().length} giao dịch · schema v${s.schemaVersion}`;
-
-  const saveBtn = $('#saveSettings');
-  const onSave = async () => {
-    const prev = S.getSettings();
-    const salary = Math.max(0, stCtl.salary.getValue() || 0);
-    const t2 = Math.max(0, stCtl.stTh2.getValue() || 0);
-    const t3 = Math.max(t2, stCtl.stTh3.getValue() || 0);
-    const t4 = Math.max(t3, stCtl.stTh4.getValue() || 0);
-    const patch = {
-      salary,
-      salaryCategory: ($('#stSalaryCategory').value || 'Lương').trim() || 'Lương',
-      thresholds: { t2, t3, t4 },
-      messages: Object.fromEntries([0, 1, 2, 3, 4].map((i) => ['t' + i, $('#msgT' + i).value])),
-    };
-    // Vừa bật lương (0 → >0): chỉ sinh cho tháng hiện tại, không bù ngược quá khứ
-    if (salary > 0 && !(prev.salary > 0)) patch.lastSalaryPeriod = addMonths(toLocalYM(), -1);
-    await S.updateSettings(patch, { silent: true });
-    close();
-    const added = await runSalaryBackfill();
-    render('settings');
-    if (!added) showToast('✅ Đã lưu cài đặt');
-  };
-  saveBtn.addEventListener('click', onSave);
-  const close = openModal(els.settingsModal, { onClose: () => saveBtn.removeEventListener('click', onSave) });
-}
-
-// ---------- Sự kiện ----------
-function bindEvents() {
-  els.addForm.addEventListener('submit', addFlow);
-  $('#resetForm').addEventListener('click', () => { amountCtl.clear(); els.note.value = ''; els.category.value = ''; els.formError.textContent = ''; els.txDate.value = toLocalYMD(); els.amount.focus(); });
-  // Enter trong ô số tiền/danh mục → thêm luôn (Ctrl/Cmd+Enter trong ghi chú)
-  els.note.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') addFlow(e); });
-  $('#openSettings').addEventListener('click', openSettings);
-  $('#exportCSV').addEventListener('click', () => doExportCSV(false));
-  $('#exportCSVAll').addEventListener('click', () => doExportCSV(true));
+// ---------- Sự kiện toàn cục ----------
+function bindGlobal() {
+  $('#themeToggle').addEventListener('click', async () => {
+    const nt = nextTheme(S.getSettings().theme);
+    await S.updateSettings({ theme: nt }, { silent: true });
+    applyTheme(nt);
+    if (currentView() === 'settings') renderSettings();
+    else if (currentView() === 'home') renderHome('chart');
+  });
   $('#backupJSON').addEventListener('click', doBackup);
   $('#restoreJSON').addEventListener('click', restoreJSONFlow);
   $('#importCSV').addEventListener('click', importCSVFlow);
+  $('#exportCSVAll').addEventListener('click', () => doExportCSV(S.getVisible(), 'tatca'));
   $('#clearAll').addEventListener('click', clearAllFlow);
-  els.chartType.addEventListener('change', () => render('chart'));
-  els.chartMode.addEventListener('change', () => render('chart'));
-  els.filterMonth.addEventListener('change', () => render('filter'));
-  $('#thisMonth').addEventListener('click', () => { els.filterMonth.value = toLocalYM(); render('filter'); });
   window.addEventListener('online', updateOnline);
   window.addEventListener('offline', updateOnline);
-  // Kiểm tra lương thiếu khi quay lại app sau thời gian dài (qua tháng mới)
-  document.addEventListener('visibilitychange', async () => { if (!document.hidden) { const n = await runSalaryBackfill(); if (n) render('data'); } });
+  document.addEventListener('visibilitychange', async () => {
+    if (document.hidden) return;
+    const added = await S.runRecurringNow();
+    if (added.length) { toastRecurring(added); refresh('data'); }
+  });
 }
 function updateOnline() { document.body.classList.toggle('offline', !navigator.onLine); }
 
-// Dùng cho kiểm thử tự động (không ảnh hưởng người dùng)
-window.__mm = { state: S, render, parseAmount, version: APP_VERSION };
+// Dùng cho kiểm thử tự động
+window.__mm = { state: S, refresh, navigate, version: APP_VERSION, t, getLocale };

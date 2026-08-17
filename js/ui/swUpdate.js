@@ -6,19 +6,21 @@ export function registerSW() {
   const banner = $('#updateBanner');
   let refreshing = false;
   let waitingWorker = null;
+  let userRequested = false; // chỉ reload khi CHÍNH người dùng bấm "Tải lại" (không reload ở lần cài SW đầu tiên)
 
   function showBanner(worker) {
     waitingWorker = worker;
     banner.classList.add('show');
   }
   $('#updateReload').addEventListener('click', () => {
+    userRequested = true;
     if (waitingWorker) waitingWorker.postMessage({ type: 'SKIP_WAITING' });
     banner.classList.remove('show');
   });
   $('#updateDismiss').addEventListener('click', () => banner.classList.remove('show'));
 
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (refreshing) return;
+    if (!userRequested || refreshing) return;
     refreshing = true;
     window.location.reload();
   });

@@ -3,10 +3,11 @@
 import { el, clear } from '../utils/dom.js';
 import { formatVND } from '../utils/money.js';
 import { dateLabel } from '../utils/date.js';
+import { t as tr } from '../i18n.js';
 
 const OVERSCAN = 6;
 
-export function createVirtualList(viewport, canvas, { onEdit, onDelete }) {
+export function createVirtualList(viewport, canvas, { onEdit, onDelete, ctx = {} }) {
   let items = [];
   let rowH = 64;
   let pool = new Map(); // id -> row element
@@ -22,22 +23,40 @@ export function createVirtualList(viewport, canvas, { onEdit, onDelete }) {
   window.addEventListener('resize', () => { readRowH(); schedule(true); });
 
   function buildRow(t) {
+    const cat = t.type !== 'transfer' && ctx.getCategory ? ctx.getCategory(t.categoryId) : null;
+    const parent = cat && cat.parentId && ctx.getCategory ? ctx.getCategory(cat.parentId) : null;
+    const acc = ctx.getAccount ? ctx.getAccount(t.accountId) : null;
+    const toAcc = t.type === 'transfer' && ctx.getAccount ? ctx.getAccount(t.toAccountId) : null;
+    const isTransfer = t.type === 'transfer';
+    const title = isTransfer
+      ? tr('tx.transferRow', { from: acc ? acc.name : '?', to: toAcc ? toAcc.name : '?' })
+      : (parent ? `${parent.name} › ${cat.name}` : (cat ? cat.name : (t.category || 'Khác')));
+    const icon = isTransfer ? '⇄' : (cat ? cat.icon : '📦');
+    const subBits = [];
+    if (!isTransfer && acc) subBits.push(`${acc.icon || ''} ${acc.name}`.trim());
+    if (t.note) subBits.push(t.note);
+    if (t.tags && t.tags.length) subBits.push(t.tags.map((x) => '#' + x).join(' '));
+    const badge = t.source === 'auto-salary' || t.source === 'recurring' ? tr('tx.badgeRecurring') : t.source === 'import' ? tr('tx.badgeImport') : null;
+
+    const ic = el('div', { className: 'tx-ic', text: icon, attrs: { 'aria-hidden': 'true' }, style: cat && cat.color ? { background: cat.color + '22' } : {} });
     const left = el('div', { className: 'tx-left' }, [
       el('div', { className: 'date', text: dateLabel(t.date) }),
       el('div', { className: 'cat' }, [
-        document.createTextNode(t.category || 'Khác'),
-        t.source === 'auto-salary' ? el('span', { className: 'badge', text: 'tự động', attrs: { title: 'Lương tự động' } }) : null,
+        document.createTextNode(title),
+        badge ? el('span', { className: 'badge', text: badge }) : null,
       ]),
-      t.note ? el('div', { className: 'note', text: t.note }) : null,
+      subBits.length ? el('div', { className: 'note', text: subBits.join(' · ') }) : null,
     ]);
-    const amt = el('div', { className: 'amt ' + (t.type === 'income' ? 'in' : 'out'), text: (t.type === 'income' ? '+' : '−') + formatVND(t.amount) });
+    const sign = t.type === 'income' ? '+' : t.type === 'expense' ? '−' : '';
+    const amt = el('div', { className: 'amt ' + (t.type === 'income' ? 'in' : t.type === 'expense' ? 'out' : 'tr'), text: sign + formatVND(t.amount) });
+    const typeLabel = t.type === 'income' ? tr('tx.income') : t.type === 'expense' ? tr('tx.expense') : tr('tx.transfer');
     const del = el('button', {
       className: 'btn danger-text tx-delete', type: 'button', text: '✕',
-      attrs: { 'aria-label': `Xóa giao dịch ${t.category} ${formatVND(t.amount)} ngày ${dateLabel(t.date)}`, title: 'Xóa (có hoàn tác)' },
+      attrs: { 'aria-label': tr('tx.deleteAria', { category: title, amount: formatVND(t.amount), date: dateLabel(t.date) }), title: tr('tx.deleteTitle') },
       on: { click: (e) => { e.stopPropagation(); onDelete(t.id); } },
     });
     const row = el('div', {
-      className: 'tx', dataset: { id: t.id }, attrs: { role: 'listitem', tabindex: '0', 'aria-label': `${t.type === 'income' ? 'Thu' : 'Chi'} ${formatVND(t.amount)}, ${t.category}, ${dateLabel(t.date)}${t.note ? ', ' + t.note : ''}. Nhấn Enter để sửa, Delete để xóa.` },
+      className: 'tx', dataset: { id: t.id }, attrs: { role: 'listitem', tabindex: '0', 'aria-label': tr('tx.rowAria', { type: typeLabel, amount: formatVND(t.amount), category: title, date: dateLabel(t.date), note: t.note ? ', ' + t.note : '' }) },
       on: {
         click: () => onEdit(t.id),
         keydown: (e) => {
@@ -45,7 +64,7 @@ export function createVirtualList(viewport, canvas, { onEdit, onDelete }) {
           else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); onDelete(t.id); }
         },
       },
-    }, [left, amt, del]);
+    }, [ic, left, amt, del]);
     return row;
   }
 
@@ -89,7 +108,7 @@ export function createVirtualList(viewport, canvas, { onEdit, onDelete }) {
       if (cur !== row) canvas.insertBefore(row, cur || null);
     }
   }
-  function sig(t) { return `${t.type}|${t.amount}|${t.category}|${t.note}|${t.date}|${t.source}|${t.updatedAt || 0}`; }
+  function sig(t) { return `${t.type}|${t.amount}|${t.categoryId}|${t.category}|${t.accountId}|${t.toAccountId}|${t.note}|${(t.tags || []).join(',')}|${t.date}|${t.source}|${t.updatedAt || 0}|${ctx.version ? ctx.version() : 0}`; }
 
   function schedule(force) {
     if (force) { if (raf) cancelAnimationFrame(raf); raf = 0; render(true); return; }

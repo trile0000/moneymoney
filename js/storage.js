@@ -3,15 +3,21 @@
 // Sửa lỗi #18: chỉ ghi khi dữ liệu thực sự đổi (so sánh chuỗi JSON).
 // Không xóa key v1 cũ — giữ nguyên làm phao cứu sinh (yêu cầu: không mất dữ liệu người dùng).
 
-import { migrate, migrateSettings, emptyData, SCHEMA_VERSION } from './migrate.js';
+import { migrate, emptyData, SCHEMA_VERSION } from './migrate.js';
 
 export const KEYS = {
   V1_TX: 'mm_transactions_v1',
   V1_SETTINGS: 'mm_settings_v1',
   V2_DATA: 'mm_data_v2',
   V2_SETTINGS: 'mm_settings_v2',
+  V3_DATA: 'mm_data_v3',
+  V3_SETTINGS: 'mm_settings_v3',
   V1_MIGRATED_AT: 'mm_migrated_v1_at',
+  V2_MIGRATED_AT: 'mm_migrated_v2_at',
 };
+// Key đang dùng (đổi khi lên schema mới)
+const DATA_KEY = KEYS.V3_DATA;
+const SETTINGS_KEY = KEYS.V3_SETTINGS;
 
 const IDB_NAME = 'moneymoney';
 const IDB_STORE = 'kv';
@@ -85,30 +91,29 @@ function lsSet(key, str) {
 // ---------- API ----------
 
 /**
- * loadAll(): đọc dữ liệu + cài đặt, tự migrate v1 → v2, đối chiếu IndexedDB.
- * Trả về { data, settings, migrated, source }
+ * loadAll(): đọc dữ liệu + cài đặt, tự migrate v1 → v2 → v3, đối chiếu IndexedDB.
+ * Trả về { data, settings, migrated, fromVersion, source }
  */
 export async function loadAll({ now = Date.now() } = {}) {
   let migrated = false;
   let source = 'localStorage';
 
-  // 1) Cài đặt
-  let settingsRaw = lsParse(KEYS.V2_SETTINGS);
+  // 1) Cài đặt: v3 → v2 → v1
+  let settingsRaw = lsParse(SETTINGS_KEY);
+  if (settingsRaw === undefined) settingsRaw = lsParse(KEYS.V2_SETTINGS);
+  if (settingsRaw === undefined) settingsRaw = lsParse(KEYS.V1_SETTINGS);
   if (settingsRaw === undefined) {
-    settingsRaw = lsParse(KEYS.V1_SETTINGS);
-    if (settingsRaw !== undefined) migrated = true;
+    const idbS = await idbGet(SETTINGS_KEY).catch(() => undefined);
+    if (idbS && typeof idbS === 'object') settingsRaw = idbS;
   }
-  const settings = migrateSettings(settingsRaw);
 
-  // 2) Dữ liệu giao dịch
-  let dataRaw = lsParse(KEYS.V2_DATA);
-  if (dataRaw === undefined) {
-    const v1 = lsParse(KEYS.V1_TX);
-    if (Array.isArray(v1)) { dataRaw = v1; migrated = true; }
-  }
-  // Đối chiếu với IndexedDB (nếu localStorage bị xóa/hỏng nhưng IDB còn)
+  // 2) Dữ liệu: v3 → v2 → v1
+  let dataRaw = lsParse(DATA_KEY);
+  if (dataRaw === undefined) { const v2 = lsParse(KEYS.V2_DATA); if (v2 && typeof v2 === 'object') { dataRaw = v2; migrated = true; } }
+  if (dataRaw === undefined) { const v1 = lsParse(KEYS.V1_TX); if (Array.isArray(v1)) { dataRaw = v1; migrated = true; } }
+  // Đối chiếu IndexedDB (nếu localStorage bị xóa/hỏng nhưng IDB còn)
   let idbRaw;
-  try { idbRaw = await idbGet(KEYS.V2_DATA); } catch { idbRaw = undefined; }
+  try { idbRaw = await idbGet(DATA_KEY); } catch { idbRaw = undefined; }
   if (idbRaw && typeof idbRaw === 'object' && Array.isArray(idbRaw.transactions)) {
     const lsSavedAt = dataRaw && !Array.isArray(dataRaw) ? Number(dataRaw.savedAt) || 0 : 0;
     const idbSavedAt = Number(idbRaw.savedAt) || 0;
@@ -116,27 +121,26 @@ export async function loadAll({ now = Date.now() } = {}) {
     if (dataRaw === undefined || (idbSavedAt > lsSavedAt && idbRaw.transactions.length >= lsCount)) {
       dataRaw = idbRaw;
       source = 'indexedDB';
+      migrated = false;
     }
   }
-  const idbSettings = await idbGet(KEYS.V2_SETTINGS).catch(() => undefined);
-  let finalSettings = settings;
-  if (settingsRaw === undefined && idbSettings) finalSettings = migrateSettings(idbSettings);
 
-  const { data, changed } = migrate(dataRaw === undefined ? emptyData() : dataRaw, { now });
+  const { data, settings, changed, fromVersion } = migrate(dataRaw === undefined ? emptyData() : dataRaw, { settings: settingsRaw, now });
   // Dọn các giao dịch đã soft-delete quá hạn (Undo chỉ có hiệu lực trong phiên)
   data.transactions = data.transactions.filter((t) => !t.deletedAt);
 
-  lastDataJSON = null; // buộc ghi lần đầu nếu có migrate
+  lastDataJSON = null;
   lastSettingsJSON = null;
-  if (migrated || changed || source === 'indexedDB') {
+  if (migrated || changed || source === 'indexedDB' || settingsRaw === undefined) {
     await saveData(data, { force: true });
-    await saveSettings(finalSettings, { force: true });
-    if (migrated) lsSet(KEYS.V1_MIGRATED_AT, String(now));
+    await saveSettings(settings, { force: true });
+    if (migrated && fromVersion === 1) lsSet(KEYS.V1_MIGRATED_AT, String(now));
+    if (migrated && fromVersion === 2) lsSet(KEYS.V2_MIGRATED_AT, String(now));
   } else {
     lastDataJSON = JSON.stringify(data);
-    lastSettingsJSON = JSON.stringify(finalSettings);
+    lastSettingsJSON = JSON.stringify(settings);
   }
-  return { data, settings: finalSettings, migrated, source };
+  return { data, settings, migrated, fromVersion, source };
 }
 
 /**
@@ -148,8 +152,8 @@ export async function saveData(data, { force = false, now = Date.now() } = {}) {
   data.savedAt = now;
   const json = JSON.stringify(data);
   if (!force && json === lastDataJSON) return { ok: true, skipped: true };
-  const r = lsSet(KEYS.V2_DATA, json);
-  const idb = await idbSet(KEYS.V2_DATA, JSON.parse(json));
+  const r = lsSet(DATA_KEY, json);
+  const idb = await idbSet(DATA_KEY, JSON.parse(json));
   if (r.ok || idb) lastDataJSON = json;
   if (!r.ok) {
     emit({ type: r.quota ? 'quota' : 'error', idb, error: r.error });
@@ -161,8 +165,8 @@ export async function saveSettings(settings, { force = false } = {}) {
   settings.schemaVersion = SCHEMA_VERSION;
   const json = JSON.stringify(settings);
   if (!force && json === lastSettingsJSON) return { ok: true, skipped: true };
-  const r = lsSet(KEYS.V2_SETTINGS, json);
-  const idb = await idbSet(KEYS.V2_SETTINGS, JSON.parse(json));
+  const r = lsSet(SETTINGS_KEY, json);
+  const idb = await idbSet(SETTINGS_KEY, JSON.parse(json));
   if (r.ok || idb) lastSettingsJSON = json;
   if (!r.ok) emit({ type: r.quota ? 'quota' : 'error', idb, error: r.error });
   return { ok: r.ok || idb, ls: r.ok, quota: r.quota, idb };

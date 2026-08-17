@@ -3,17 +3,26 @@
 import { toCSV, parseCSV } from '../utils/csv.js';
 import { toLocalYMD, isValidYMD } from '../utils/date.js';
 import { parseAmount } from '../utils/money.js';
-import { migrate, migrateSettings, SCHEMA_VERSION } from '../migrate.js';
+import { migrate, SCHEMA_VERSION } from '../migrate.js';
 
-export const CSV_HEADER = ['date', 'type', 'amount', 'category', 'note', 'id', 'createdAt', 'source'];
+export const CSV_HEADER = ['date', 'type', 'amount', 'category', 'note', 'account', 'toAccount', 'tags', 'id', 'createdAt', 'source'];
 
-export function transactionsToCSV(list) {
+/**
+ * @param {Array} list giao dịch
+ * @param {object} ctx { accountName(id) → string, categoryPath(id) → string } (tùy chọn)
+ */
+export function transactionsToCSV(list, ctx = {}) {
+  const accName = ctx.accountName || (() => '');
+  const catPath = ctx.categoryPath || ((id, t) => t.category || '');
   const rows = [CSV_HEADER, ...list.map((t) => [
     t.date,
     t.type,
     t.amount,
-    t.category,
+    t.type === 'transfer' ? '' : catPath(t.categoryId, t),
     t.note || '',
+    accName(t.accountId),
+    t.type === 'transfer' ? accName(t.toAccountId) : '',
+    (t.tags || []).join(' '),
     t.id,
     new Date(t.createdAt).toISOString(),
     t.source || 'manual',
@@ -22,12 +31,13 @@ export function transactionsToCSV(list) {
 }
 
 export function backupToJSON(data, settings) {
+  const { transactions, ...rest } = data;
   return JSON.stringify({
     app: 'moneymoney',
     schemaVersion: SCHEMA_VERSION,
     exportedAt: new Date().toISOString(),
-    transactions: data.transactions.filter((t) => !t.deletedAt),
-    meta: data.meta || {},
+    ...rest,
+    transactions: transactions.filter((t) => !t.deletedAt),
     settings,
   }, null, 2);
 }
@@ -55,6 +65,9 @@ const HEADER_ALIASES = {
   createdAt: ['createdat', 'created_at', 'created', 'timestamp'],
   source: ['source', 'nguồn', 'nguon'],
   periodKey: ['periodkey', 'period'],
+  account: ['account', 'ví', 'vi', 'tài khoản', 'tai khoan', 'wallet'],
+  toAccount: ['toaccount', 'to_account', 'ví đích', 'đến ví'],
+  tags: ['tags', 'tag', 'nhãn', 'nhan'],
 };
 
 function norm(s) { return String(s || '').trim().toLowerCase().replace(/^\uFEFF/, ''); }
@@ -75,6 +88,7 @@ function parseType(v) {
   const s = norm(v);
   if (['income', 'thu', 'in', '+', 'credit', 'thu nhập', 'thu nhap'].includes(s)) return 'income';
   if (['expense', 'chi', 'out', '-', 'debit', 'chi tiêu', 'chi tieu'].includes(s)) return 'expense';
+  if (['transfer', 'chuyển khoản', 'chuyen khoan', 'chuyển', 'chuyen'].includes(s)) return 'transfer';
   return null;
 }
 
@@ -137,6 +151,9 @@ export function parseTransactionsCSV(text) {
       date,
       createdAt,
       source: get('source') || 'import',
+      accountName: get('account') || '',
+      toAccountName: get('toAccount') || '',
+      tags: String(get('tags') || '').split(/[\s,;#]+/).map((x) => x.trim()).filter(Boolean),
     };
     const pk = get('periodKey');
     if (pk) item.periodKey = pk;
@@ -168,15 +185,15 @@ export function dedupeAgainst(items, existing) {
   return { fresh, dupes };
 }
 
-/** Đọc file JSON backup → { transactions, settings|null, meta } hoặc ném lỗi */
+/** Đọc file JSON backup (v1 mảng / v2 / v3) → { data (v3 đầy đủ), transactions, settings|null, meta } hoặc ném lỗi */
 export function parseBackupJSON(text) {
   let obj;
   try { obj = JSON.parse(text); } catch { throw new Error('File JSON không hợp lệ'); }
-  let txRaw;
-  if (Array.isArray(obj)) txRaw = obj; // v1 thuần
-  else if (obj && Array.isArray(obj.transactions)) txRaw = obj;
+  let raw;
+  if (Array.isArray(obj)) raw = obj; // v1 thuần
+  else if (obj && Array.isArray(obj.transactions)) raw = obj;
   else throw new Error('Không tìm thấy danh sách giao dịch trong file');
-  const { data } = migrate(txRaw);
-  const settings = obj && obj.settings && typeof obj.settings === 'object' ? migrateSettings(obj.settings) : null;
-  return { transactions: data.transactions, settings, meta: data.meta || {} };
+  const hasSettings = obj && obj.settings && typeof obj.settings === 'object';
+  const { data, settings } = migrate(raw, { settings: hasSettings ? obj.settings : undefined });
+  return { data, transactions: data.transactions, settings: hasSettings ? settings : null, meta: data.meta || {} };
 }

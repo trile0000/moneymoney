@@ -1,5 +1,6 @@
 // Snackbar Hoàn tác 5 giây (sửa lỗi #2). Xóa mềm → hết 5s (hoặc rời trang) mới xóa hẳn.
 import { $ } from '../utils/dom.js';
+import { t } from '../i18n.js';
 
 const UNDO_MS = 5000;
 let pending = []; // ids đang chờ xóa hẳn
@@ -25,7 +26,7 @@ export function queueUndo(id, label) {
   deadline = Date.now() + UNDO_MS;
   clearTimeout(timer); clearInterval(tick);
   const bar = $('#undoBar');
-  $('#undoText').textContent = pending.length > 1 ? `Đã xóa ${pending.length} giao dịch` : `Đã xóa ${label || 'giao dịch'}`;
+  $('#undoText').textContent = pending.length > 1 ? t('undo.deletedN', { n: pending.length }) : t('undo.deleted', { label: label || '' });
   bar.classList.add('show');
   const upd = () => { $('#undoCount').textContent = String(Math.max(0, Math.ceil((deadline - Date.now()) / 1000))); };
   upd();

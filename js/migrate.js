@@ -1,39 +1,50 @@
 // Migration schema dữ liệu — thuần túy (không đụng localStorage) để test được.
 //
 // v1 (mm_transactions_v1): mảng [{ id, type, amount, category, note, createdAt }]
-//    - id = Date.now().toString() → có thể trùng
-//    - ngày kinh tế = createdAt (ms) → phụ thuộc múi giờ
-//    - lương tự động nhận diện bằng note 'Tự động thêm từ hệ thống'
-//
-// v2 (mm_data_v2): { schemaVersion: 2, transactions: [...], meta: {...}, savedAt }
-//    giao dịch: { id(uuid), type, amount, category, note, date('YYYY-MM-DD' local),
-//                createdAt(ms), updatedAt?, source('manual'|'auto-salary'|'import'), periodKey?('YYYY-MM'), deletedAt? }
+// v2 (mm_data_v2): { schemaVersion: 2, transactions, meta, savedAt } — date local, source/periodKey, uuid
+// v3 (mm_data_v3): + accounts, categories (2 cấp), recurring (tổng quát), tags, transfer, và các slice P1b/P1c (budgets, goals, debts, assets, snapshots)
+//    giao dịch: { id, type: 'income'|'expense'|'transfer', amount, category (tên), categoryId, accountId, toAccountId?, note, tags[],
+//                date, createdAt, updatedAt?, source: 'manual'|'recurring'|'import'|'auto-salary', recurringId?, periodKey?, receiptId?, debt?, deletedAt? }
 
 import { uuid } from './utils/id.js';
-import { toLocalYMD, ymOf, isValidYMD } from './utils/date.js';
+import { toLocalYMD, ymOf, isValidYMD, isValidYM } from './utils/date.js';
+import { defaultCategoryList, findOrCreate, makeCategory, normName } from './features/categories.js';
+import { defaultAccountList, makeAccount } from './features/accounts.js';
+import { makeRule } from './features/recurring.js';
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 export const LEGACY_SALARY_NOTE = 'Tự động thêm từ hệ thống';
 
 export function emptyData() {
-  return { schemaVersion: SCHEMA_VERSION, transactions: [], meta: {}, savedAt: 0 };
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    transactions: [],
+    accounts: [],
+    categories: [],
+    recurring: [],
+    budgets: [],
+    goals: [],
+    debts: [],
+    assets: [],
+    snapshots: { networth: [] },
+    meta: {},
+    savedAt: 0,
+  };
 }
 
-/** Chuẩn hóa 1 giao dịch (dùng cho cả migrate v1 và import). Trả null nếu không cứu được. */
+/** Chuẩn hóa 1 giao dịch (dùng cho migrate và import). Trả null nếu không cứu được. */
 export function normalizeTransaction(t, { seenIds, now = Date.now(), defaultSource = 'manual' } = {}) {
   if (!t || typeof t !== 'object') return null;
-  const type = t.type === 'income' ? 'income' : 'expense';
+  const type = t.type === 'income' ? 'income' : t.type === 'transfer' ? 'transfer' : 'expense';
   const amount = Math.abs(Math.round(Number(t.amount) || 0));
-  const category = String(t.category ?? '').trim() || 'Khác';
+  const category = String(t.category ?? '').trim() || (type === 'transfer' ? '' : 'Khác');
   const note = String(t.note ?? '').trim();
 
-  // Ngày kinh tế
   let date = typeof t.date === 'string' && isValidYMD(t.date) ? t.date : null;
   let createdAt = Number(t.createdAt);
   if (!Number.isFinite(createdAt) || createdAt <= 0) createdAt = now;
   if (!date) date = toLocalYMD(createdAt);
 
-  // ID: giữ nếu là chuỗi hợp lệ và chưa trùng; nếu trùng → cấp UUID mới (sửa lỗi #1)
   let id = typeof t.id === 'string' || typeof t.id === 'number' ? String(t.id) : '';
   if (!id || (seenIds && seenIds.has(id))) id = uuid();
   if (seenIds) seenIds.add(id);
@@ -41,66 +52,137 @@ export function normalizeTransaction(t, { seenIds, now = Date.now(), defaultSour
   let source = t.source;
   let periodKey = t.periodKey;
   if (!source) {
-    // Nhận diện lương tự động của bản cũ để không sinh trùng (sửa lỗi #7)
-    if (type === 'income' && note === LEGACY_SALARY_NOTE) {
-      source = 'auto-salary';
-      periodKey = periodKey || ymOf(date);
-    } else source = defaultSource;
+    if (type === 'income' && note === LEGACY_SALARY_NOTE) { source = 'auto-salary'; periodKey = periodKey || ymOf(date); }
+    else source = defaultSource;
   }
   if (source === 'auto-salary' && !periodKey) periodKey = ymOf(date);
 
   const out = { id, type, amount, category, note, date, createdAt, source };
+  if (t.categoryId) out.categoryId = String(t.categoryId);
+  if (t.accountId) out.accountId = String(t.accountId);
+  if (type === 'transfer' && t.toAccountId) out.toAccountId = String(t.toAccountId);
+  out.tags = Array.isArray(t.tags) ? Array.from(new Set(t.tags.map((x) => String(x).trim()).filter(Boolean))).slice(0, 20) : [];
   if (periodKey) out.periodKey = periodKey;
+  if (t.recurringId) out.recurringId = String(t.recurringId);
+  if (t.receiptId) out.receiptId = String(t.receiptId);
+  if (t.debt && typeof t.debt === 'object' && (t.debt.kind === 'lend' || t.debt.kind === 'borrow')) {
+    out.debt = { kind: t.debt.kind, person: String(t.debt.person || '').trim(), settledAt: Number(t.debt.settledAt) || null };
+  }
   if (Number.isFinite(Number(t.updatedAt))) out.updatedAt = Number(t.updatedAt);
   if (Number.isFinite(Number(t.deletedAt)) && Number(t.deletedAt) > 0) out.deletedAt = Number(t.deletedAt);
   return out;
 }
 
+export function sortTx(arr) {
+  return arr.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.createdAt - a.createdAt));
+}
+
 /**
- * migrate(raw) — nhận bất kỳ dữ liệu nào đọc được (v1 mảng, v2 object, hoặc rác) → v2 hợp lệ.
+ * migrate(raw, { settings, now }) — nhận bất kỳ dữ liệu nào (v1 mảng, v2/v3 object, rác) → v3 hợp lệ + settings đã nâng cấp.
  * Không bao giờ ném lỗi; không bao giờ mất giao dịch có amount hợp lệ.
+ * @returns {{ data, settings, fromVersion, changed, stats }}
  */
-export function migrate(raw, { now = Date.now() } = {}) {
+export function migrate(raw, { settings: settingsIn, now = Date.now() } = {}) {
+  const settings = migrateSettings(settingsIn);
   const seen = new Set();
-  const result = emptyData();
+  const data = emptyData();
   let list = [];
   let fromVersion = 0;
+  let src = null;
 
-  if (Array.isArray(raw)) {
-    list = raw;
-    fromVersion = 1;
-  } else if (raw && typeof raw === 'object' && Array.isArray(raw.transactions)) {
+  if (Array.isArray(raw)) { list = raw; fromVersion = 1; }
+  else if (raw && typeof raw === 'object' && Array.isArray(raw.transactions)) {
     list = raw.transactions;
     fromVersion = Number(raw.schemaVersion) || 2;
-    result.meta = raw.meta && typeof raw.meta === 'object' ? { ...raw.meta } : {};
-    result.savedAt = Number(raw.savedAt) || 0;
+    src = raw;
+    data.meta = raw.meta && typeof raw.meta === 'object' ? { ...raw.meta } : {};
+    data.savedAt = Number(raw.savedAt) || 0;
   } else {
-    return { data: result, fromVersion: 0, changed: false, stats: { total: 0, dupIdsFixed: 0, dropped: 0 } };
+    fromVersion = 0;
   }
 
-  let dupIdsFixed = 0;
-  let dropped = 0;
+  let dupIdsFixed = 0, dropped = 0;
   for (const t of list) {
     const before = t && (typeof t.id === 'string' || typeof t.id === 'number') ? String(t.id) : '';
     const n = normalizeTransaction(t, { seenIds: seen, now });
     if (!n) { dropped++; continue; }
     if (before && n.id !== before) dupIdsFixed++;
-    result.transactions.push(n);
+    data.transactions.push(n);
   }
-  // Sắp xếp ổn định: ngày giảm dần, rồi createdAt giảm dần
-  result.transactions.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.createdAt - a.createdAt));
 
-  const changed = fromVersion !== SCHEMA_VERSION || dupIdsFixed > 0 || dropped > 0;
-  return { data: result, fromVersion, changed, stats: { total: result.transactions.length, dupIdsFixed, dropped } };
+  // ---- slice v3 (giữ nếu đã có, tạo mặc định nếu chưa) ----
+  data.accounts = (src && Array.isArray(src.accounts) && src.accounts.length ? src.accounts.map((a) => makeAccount(a)) : defaultAccountList());
+  data.categories = (src && Array.isArray(src.categories) && src.categories.length ? src.categories.map((c) => makeCategory(c)) : defaultCategoryList());
+  data.recurring = src && Array.isArray(src.recurring) ? src.recurring.map((r) => makeRule(r)) : [];
+  for (const k of ['budgets', 'goals', 'debts', 'assets']) data[k] = src && Array.isArray(src[k]) ? src[k].slice() : [];
+  data.snapshots = src && src.snapshots && typeof src.snapshots === 'object' ? { networth: [], ...src.snapshots } : { networth: [] };
+
+  const defaultAccount = data.accounts.find((a) => a.id === settings.defaultAccountId && !a.archived) || data.accounts.find((a) => !a.archived) || data.accounts[0];
+  if (!settings.defaultAccountId || !data.accounts.some((a) => a.id === settings.defaultAccountId)) settings.defaultAccountId = defaultAccount.id;
+
+  // ---- gán accountId / categoryId cho giao dịch chưa có (v1/v2 → v3) ----
+  let catCreated = 0;
+  const catIdSet = new Set(data.categories.map((c) => c.id));
+  for (const t of data.transactions) {
+    if (!t.accountId || !data.accounts.some((a) => a.id === t.accountId)) t.accountId = defaultAccount.id;
+    if (t.type === 'transfer' && (!t.toAccountId || !data.accounts.some((a) => a.id === t.toAccountId))) {
+      // chuyển khoản mất đích → coi là chi
+      t.type = 'expense'; delete t.toAccountId; if (!t.category) t.category = 'Khác';
+    }
+    if (t.type !== 'transfer') {
+      if (t.categoryId && catIdSet.has(t.categoryId)) {
+        // đồng bộ tên hiển thị theo danh mục
+        const c = data.categories.find((x) => x.id === t.categoryId);
+        if (c && normName(c.name) !== normName(t.category)) t.category = c.name;
+      } else {
+        const kind = t.type === 'income' ? 'income' : 'expense';
+        const { category, created } = findOrCreate(data.categories, t.category || 'Khác', { kind });
+        if (created) { data.categories.push(category); catIdSet.add(category.id); catCreated++; }
+        else if (category.kind !== 'both' && category.kind !== kind) { category.kind = 'both'; }
+        t.categoryId = category.id;
+        t.category = category.name;
+      }
+    } else {
+      delete t.categoryId; t.category = '';
+    }
+  }
+
+  // ---- lương cũ (P0) → rule định kỳ tổng quát ----
+  let salaryRuleCreated = false;
+  const hasSalaryRule = data.recurring.some((r) => r.legacySalary) || data.meta.salaryMigrated === true;
+  if (!hasSalaryRule && (settings.salary > 0 || data.transactions.some((t) => t.source === 'auto-salary'))) {
+    const { category: cat, created } = findOrCreate(data.categories, settings.salaryCategory || 'Lương', { kind: 'income' });
+    if (created) { data.categories.push(cat); catCreated++; }
+    const last = isValidYM(settings.lastSalaryPeriod) ? settings.lastSalaryPeriod : null;
+    const startYM = last || toLocalYMD(now).slice(0, 7);
+    const rule = makeRule({
+      name: cat.name,
+      enabled: settings.salary > 0,
+      template: { type: 'income', amount: settings.salary, categoryId: cat.id, category: cat.name, accountId: defaultAccount.id, note: 'Lương tự động', tags: [] },
+      freq: 'monthly', interval: 1, byMonthDay: 1,
+      startDate: `${startYM}-01`,
+      lastDate: last ? `${last}-01` : null,
+      createdAt: now,
+    });
+    rule.legacySalary = true;
+    data.recurring.push(rule);
+    for (const t of data.transactions) if (t.source === 'auto-salary' && !t.recurringId) t.recurringId = rule.id;
+    data.meta.salaryMigrated = true;
+    salaryRuleCreated = true;
+  }
+
+  sortTx(data.transactions);
+  const changed = fromVersion !== SCHEMA_VERSION || dupIdsFixed > 0 || dropped > 0 || catCreated > 0 || salaryRuleCreated;
+  return { data, settings, fromVersion, changed, stats: { total: data.transactions.length, dupIdsFixed, dropped, catCreated, salaryRuleCreated } };
 }
 
-/** Migration cài đặt: v1 → v2 (thêm trường mới với giá trị mặc định, giữ nguyên trường cũ) */
+// ---------- Cài đặt ----------
 export function defaultSettings() {
   return {
     schemaVersion: SCHEMA_VERSION,
     salary: 0,
     salaryCategory: 'Lương',
-    salaryEnabled: null, // null = suy ra từ salary > 0 (tương thích ngược)
+    salaryEnabled: null,
     thresholds: { t2: 5000000, t3: 10000000, t4: 20000000 },
     messages: {
       t0: '😿 Âm ({sign}{amount}). Thử cắt giảm vài khoản không cần thiết nhé!',
@@ -111,7 +193,16 @@ export function defaultSettings() {
     },
     bestTier: 0,
     bestTierMonth: null,
-    lastSalaryPeriod: null, // 'YYYY-MM' — kỳ lương gần nhất đã kiểm tra/sinh (sửa lỗi #6)
+    lastSalaryPeriod: null,
+    // v3
+    theme: 'system', // 'system' | 'light' | 'dark'
+    locale: 'vi', // 'vi' | 'en'
+    defaultAccountId: null,
+    lastCategoryId: null,
+    lastAccountId: null,
+    rule503020: { need: 50, want: 30, save: 20 },
+    emergencyMonths: 6,
+    savedFilters: [],
   };
 }
 
@@ -123,6 +214,7 @@ export function migrateSettings(raw) {
     ...raw,
     thresholds: { ...d.thresholds, ...(raw.thresholds || {}) },
     messages: { ...d.messages, ...(raw.messages || {}) },
+    rule503020: { ...d.rule503020, ...(raw.rule503020 || {}) },
     schemaVersion: SCHEMA_VERSION,
   };
   out.salary = Math.max(0, Number(out.salary) || 0);
@@ -132,5 +224,9 @@ export function migrateSettings(raw) {
   th.t2 = Math.max(0, Number(th.t2) || 0);
   th.t3 = Math.max(th.t2, Number(th.t3) || 0);
   th.t4 = Math.max(th.t3, Number(th.t4) || 0);
+  if (!['system', 'light', 'dark'].includes(out.theme)) out.theme = 'system';
+  if (!['vi', 'en'].includes(out.locale)) out.locale = 'vi';
+  if (!Array.isArray(out.savedFilters)) out.savedFilters = [];
+  out.emergencyMonths = [3, 6, 12].includes(Number(out.emergencyMonths)) ? Number(out.emergencyMonths) : 6;
   return out;
 }

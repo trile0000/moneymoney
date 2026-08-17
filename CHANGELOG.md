@@ -2,6 +2,24 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/vi/1.0.0/). Phiên bản = `APP_VERSION` = `CACHE_VERSION`.
 
+## [2.1.0] — 2026-08-17 — P1a: nền tảng Module A (ví, danh mục 2 cấp, định kỳ tổng quát, lọc, tab, dark mode, song ngữ)
+
+### Thêm
+- **Schema v3** (`mm_data_v3`): ví/tài khoản, danh mục 2 cấp (icon, màu, nhóm 50/30/20), tag, chuyển khoản giữa ví (không tính thu/chi), giao dịch định kỳ tổng quát; migration v1/v2 → v3 tự động, key cũ giữ nguyên, có test.
+- **Ví & tài khoản**: Tiền mặt / Ngân hàng / Ví điện tử / Thẻ tín dụng (hạn mức, ngày sao kê, ngày đến hạn, cảnh báo ≤ 5 ngày); số dư từng ví, tổng tài sản / nợ thẻ / ròng; chuyển khoản; lưu trữ hoặc xóa kèm chuyển giao dịch sang ví khác.
+- **Danh mục 2 cấp**: thêm/sửa/lưu trữ/gộp, danh mục con, tạo nhanh ngay trong ô chọn danh mục; danh mục mặc định có nhóm Thiết yếu / Mong muốn / Tiết kiệm.
+- **Giao dịch định kỳ** (ngày/tuần/tháng/năm, mỗi n kỳ, ngày trong tháng, ngày bắt đầu/kết thúc, bật/tắt, bỏ qua kỳ tới): thay thế "lương ngày 1" (rule lương được tạo tự động từ cài đặt cũ), bù kỳ còn thiếu, không sinh lại giao dịch đã xóa.
+- **Nhập nhanh**: form 1 màn hình (Chi/Thu/Chuyển), nhớ danh mục & ví dùng gần nhất, chip danh mục hay dùng, gợi ý ghi chú theo danh mục, tag, Enter để lưu tiếp, nút "Lặp lại" trong sheet sửa.
+- **Tìm kiếm & lọc**: tìm không dấu (ghi chú, danh mục, ví, tag, số tiền), preset thời gian, lọc nâng cao (loại, ví, danh mục kể cả con, tag, khoảng tiền, khoảng ngày), **bộ lọc đã lưu**, tổng hợp kết quả, xuất CSV theo kết quả lọc.
+- **Điều hướng tab dưới cùng** (Trang chủ / Giao dịch / ＋ / Ngân sách / Cài đặt), hash router; Trang chủ có thẻ Ví, Giao dịch gần đây, Định kỳ sắp tới.
+- **Dark mode** (theo hệ thống + công tắc), **song ngữ Việt/Anh** (mặc định Việt), test bảo đảm mọi key đều có bản dịch.
+- Xuất CSV thêm cột ví / ví đích / tag; sao lưu JSON chứa toàn bộ (ví, danh mục, định kỳ, cài đặt); khôi phục "Gộp" ánh xạ ví/danh mục theo tên.
+- Tab Ngân sách: xem trước chi theo danh mục tháng này (P1b sẽ thay bằng ngân sách đầy đủ).
+
+### Sửa
+- Service worker: không tự reload trang khi SW được cài lần đầu (chỉ reload khi người dùng bấm "Tải lại").
+- Toast/snackbar không bị thanh tab che.
+
 ## [2.0.1] — 2026-08-17 — Tinh chỉnh theo Lighthouse (Perf 94/97, A11y 95 → mục tiêu 100)
 
 - A11y: bỏ `aria-label` trên phần tử generic (KPI, chips → `role=group`), cây danh sách đúng cấu trúc `list > listitem` (viewport là `region`, canvas là `list`) — sửa "prohibited ARIA attributes" và "accessibility tree not well-formed".
