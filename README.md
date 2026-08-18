@@ -4,7 +4,7 @@ PWA quản lý thu chi cá nhân cho người dùng Việt Nam. **Static site**,
 
 🔗 https://trile0000.github.io/moneymoney/
 
-## Tính năng (bản 2.6.1)
+## Tính năng (bản 2.6.2)
 
 - **Nhiều ví/tài khoản** (tiền mặt, ngân hàng, ví điện tử, thẻ tín dụng có ngày sao kê/đến hạn), **chuyển khoản giữa ví**, số dư từng ví.
 - **Danh mục 2 cấp** có icon/màu/nhóm 50-30-20, **tag** tự do, **giao dịch định kỳ** tổng quát (ngày/tuần/tháng/năm, bù kỳ thiếu, bỏ qua 1 kỳ).

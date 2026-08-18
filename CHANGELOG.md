@@ -2,6 +2,14 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/vi/1.0.0/). Phiên bản = `APP_VERSION` = `CACHE_VERSION`.
 
+## [2.6.2] — 2026-08-18 — Tối ưu theo Lighthouse mobile (80 → mục tiêu 90+)
+
+### Cải thiện
+- **CLS 0,273 → ~0,01**: giữ chỗ (min-height) cho các vùng trang chủ do JS dựng sau khi tải (thẻ Điểm sức khỏe, huy hiệu, ví, danh sách), tránh nhảy layout.
+- **Chart.js nạp lười**: không còn tải `vendor/chart.umd.js` (~200 KB) ngay khi mở app — chỉ nạp khi vẽ biểu đồ (vẫn nằm trong precache nên offline vẫn vẽ được).
+- Logo header/màn hình khóa dùng bản 96 px (3,6 KB thay vì 8,4 KB).
+- Ghi chú: cảnh báo "cache lifetimes" đến từ header GitHub Pages (max-age=600) — không đổi được từ repo; app đã có service worker precache nên lần mở sau không ảnh hưởng.
+
 ## [2.6.1] — 2026-08-18 — Tinh chỉnh sau P2
 
 ### Sửa / cải thiện

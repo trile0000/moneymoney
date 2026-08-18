@@ -7,6 +7,21 @@ import { el, clear } from '../utils/dom.js';
 import { addMonths, toLocalYM, dateLabel } from '../utils/date.js';
 
 let chart = null;
+let chartLoading = null;
+/** Nạp Chart.js lười (self-host) — chỉ khi cần vẽ, giảm JS tải lúc mở app. */
+export function ensureChart() {
+  if (window.Chart) return Promise.resolve(window.Chart);
+  if (!chartLoading) {
+    chartLoading = new Promise((resolve, reject) => {
+      const sc = document.createElement('script');
+      sc.src = 'vendor/chart.umd.js'; sc.async = true;
+      sc.onload = () => resolve(window.Chart);
+      sc.onerror = () => { chartLoading = null; reject(new Error('chart-load-failed')); };
+      document.head.appendChild(sc);
+    });
+  }
+  return chartLoading;
+}
 
 function palette(n) {
   const base = ['#b3261e', '#2e7d32', '#7A2A1A', '#ef6c00', '#1565c0', '#6a1b9a', '#00897b', '#c2185b', '#455a64', '#8e24aa', '#43a047', '#1e88e5', '#5d4037', '#f9a825', '#00acc1'];
@@ -25,8 +40,11 @@ export function renderChart({ canvas, scopeEl, heatmapEl, mode, type, monthKey, 
     if (heatmapEl) heatmapEl.setAttribute('aria-label', t('chart.ariaHeatmap', { scope: monthLabelL(key), day: info.maxDay ? dateLabel(info.maxDay) : '—', amount: formatVND(info.max) }));
     return;
   }
-  if (!canvas || typeof window.Chart === 'undefined') {
-    if (scopeEl) scopeEl.textContent = t('chart.libFail');
+  if (!canvas) return;
+  if (typeof window.Chart === 'undefined') {
+    // nạp lười rồi vẽ lại với đúng tham số hiện tại
+    const args = { canvas, scopeEl, heatmapEl, mode, type, monthKey, month, monthIndex, categoryOf };
+    ensureChart().then(() => renderChart(args)).catch(() => { if (scopeEl) scopeEl.textContent = t('chart.libFail'); });
     return;
   }
   if (chart) { try { chart.destroy(); } catch { /* ignore */ } chart = null; }

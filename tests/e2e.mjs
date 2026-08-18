@@ -275,12 +275,13 @@ check('CSV có BOM + cột account/tags', csv.charCodeAt(0) === 0xfeff && csv.sp
 await page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller, null, { timeout: 15000 }).catch(() => {});
 await sleep(1500);
 const sw = await page.evaluate(async () => { const keys = await caches.keys(); const c = await caches.open(keys.find((k) => k.startsWith('mm-')) || 'x'); return { controller: !!navigator.serviceWorker.controller, cached: (await c.keys()).length, keys }; });
-check('SW controlling & precache đủ (>= 76 file)', sw.controller && sw.cached >= 76, JSON.stringify(sw));
+check('SW controlling & precache đủ (>= 77 file)', sw.controller && sw.cached >= 77, JSON.stringify(sw));
 await goto('#/home');
 await ctx.setOffline(true);
 await page.reload().catch(() => {});
 await page.waitForFunction(() => window.__mm && document.querySelectorAll('#accountList .acc-row').length > 0, null, { timeout: 15000 }).catch(() => {});
-check('Offline: app mở, Chart.js + font sẵn', await page.evaluate(() => typeof window.Chart !== 'undefined' && document.fonts.check('16px "Baloo 2"') && document.querySelectorAll('#accountList .acc-row').length > 0).catch(() => false));
+await page.waitForFunction(() => typeof window.Chart !== 'undefined', null, { timeout: 8000 }).catch(() => {});
+check('Offline: app mở, Chart.js (nạp lười từ cache) + font sẵn', await page.evaluate(() => typeof window.Chart !== 'undefined' && document.fonts.check('16px "Baloo 2"') && document.querySelectorAll('#accountList .acc-row').length > 0).catch(() => false));
 await ctx.setOffline(false);
 
 // 12) Hiệu năng 10.000 giao dịch

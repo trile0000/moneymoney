@@ -10,6 +10,7 @@ import { openFormSheet } from '../ui/formSheet.js';
 import { bindAmountInput } from '../ui/amountInput.js';
 import { confirmDialog } from '../ui/confirm.js';
 import { isDark } from '../ui/theme.js';
+import { ensureChart } from '../ui/charts.js';
 import { DEBT_KINDS, schedule, debtStatus, simulatePayoff, prepaySavings } from '../features/debts.js';
 import { ASSET_TYPES, ASSET_ICONS, computeNetWorth, diversification } from '../features/networth.js';
 import { forecast } from '../features/forecast.js';
@@ -360,7 +361,8 @@ function renderNetWorth() {
 
 function drawNwChart() {
   const canvas = $('#nwChart');
-  if (!canvas || typeof window.Chart === 'undefined') return;
+  if (!canvas) return;
+  if (typeof window.Chart === 'undefined') { ensureChart().then(() => drawNwChart()).catch(() => {}); return; }
   if (nwChart) { try { nwChart.destroy(); } catch { /* ignore */ } nwChart = null; }
   const snaps = S.getSnapshots();
   const cur = toLocalYM();

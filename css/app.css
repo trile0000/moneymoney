@@ -78,7 +78,7 @@ body {
 /* Header */
 header.app-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
 .title { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 200px; }
-.logo { width: 44px; height: 44px; border-radius: 12px; background: var(--surface) url('../assets/mascot/sm/tiger_logo.webp') center/cover no-repeat; box-shadow: var(--shadow-sm); flex-shrink: 0; }
+.logo { width: 44px; height: 44px; border-radius: 12px; background: var(--surface) url('../assets/mascot/sm/tiger_logo_96.webp') center/cover no-repeat; box-shadow: var(--shadow-sm); flex-shrink: 0; }
 h1 { font-size: 28px; margin: 0; font-weight: 700; }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; }
 
@@ -508,3 +508,10 @@ body.locked > .container, body.locked > .tabbar { filter: blur(6px); pointer-eve
 .inv-profile { margin: 10px 0; }
 .inv-row .bar-sub { line-height: 1.4; }
 .inv-table td:first-child { white-space: nowrap; }
+/* v2.6.2: giữ chỗ cho nội dung JS dựng sau khi tải để giảm CLS (Lighthouse mobile) */
+.health-home { min-height: 190px; }
+.streak-row { min-height: 22px; }
+#homeBadges { min-height: 108px; }
+#homeInvest { min-height: 40px; }
+#accountList { min-height: 52px; }
+.recent-list, .insight-list, .budget-list, .goal-list { min-height: 44px; }
