@@ -1,11 +1,11 @@
 // Điểm vào ứng dụng (v2.1 / P1a): boot, router, luồng dùng chung (thêm/sửa/xóa/undo/nhập/xuất/xóa tất cả), theme, i18n, SW.
 import { APP_VERSION } from './version.js';
-import { loadAll, onStorageEvent, blobGet, blobPut, blobDelete, blobClear, blobUsage } from './storage.js';
+import { loadAll, unlockAndLoad, onStorageEvent, blobGet, blobPut, blobDelete, blobClear, blobUsage } from './storage.js';
 import * as S from './state.js';
 import { $, el } from './utils/dom.js';
 import { formatVND } from './utils/money.js';
 import { toLocalYMD } from './utils/date.js';
-import { transactionsToCSV, backupToJSON, downloadText, parseTransactionsCSV, dedupeAgainst, parseBackupJSON, dataUrlToBlob, blobToDataUrl } from './features/importExport.js';
+import { transactionsToCSV, backupToJSON, downloadText, dedupeAgainst, parseBackupJSON, dataUrlToBlob, blobToDataUrl } from './features/importExport.js';
 import { pathName } from './features/categories.js';
 import { t, setLocale, applyI18n, getLocale } from './i18n.js';
 import { applyTheme, nextTheme, onThemeChange } from './ui/theme.js';
@@ -21,6 +21,9 @@ import { initBudget, renderBudget } from './views/budget.js';
 import { initWealth, renderWealth, snapshotNow, healthSummary, syncBadges } from './views/wealth.js';
 import { initIou, renderIou } from './views/iou.js';
 import { shouldOnboard, runOnboarding } from './ui/onboarding.js';
+import { openCsvWizard } from './ui/csvWizard.js';
+import { showLockScreen } from './ui/lock.js';
+import { initSecurity, renderSecurity } from './views/security.js';
 import { initSettings, renderSettings, openCategoryForm, openAccountForm, openRuleForm } from './views/settings.js';
 
 let version = 0; // tăng mỗi lần dữ liệu đổi (để virtual list biết cần dựng lại dòng)
@@ -38,7 +41,16 @@ const ctx = {
   window.addEventListener('error', (e) => { console.error(e.error || e.message); showToast(t('common.error') + ': ' + (e.message || 'JS error'), { kind: 'error' }); });
   window.addEventListener('unhandledrejection', (e) => { console.error(e.reason); showToast(t('common.error') + ': ' + (e.reason && e.reason.message || 'Promise'), { kind: 'error' }); });
 
-  const { data, settings, migrated, fromVersion, source } = await loadAll();
+  let loaded = await loadAll();
+  if (loaded.locked) {
+    // Dữ liệu đang mã hóa: hiện màn hình khóa trước, chỉ đi tiếp khi PIN/mã khôi phục đúng
+    setLocale(loaded.settings.locale); applyI18n(); applyTheme(loaded.settings.theme);
+    const lockedInfo = loaded;
+    let result = null;
+    await showLockScreen({ tryUnlock: async (secret) => { result = await unlockAndLoad(lockedInfo, secret); return !!result; } });
+    loaded = result;
+  }
+  const { data, settings, migrated, fromVersion, source } = loaded;
   S.init({ data, settings });
   setLocale(settings.locale);
   applyI18n();
@@ -56,6 +68,7 @@ const ctx = {
   initWealth(ctx);
   initIou(ctx);
   initSettings(ctx);
+  initSecurity(ctx);
   initUndo({
     onCommit: async (ids) => { for (const id of ids) { const tx = S.getById(id); if (tx && tx.receiptId) await blobDelete(tx.receiptId); } await S.purgeDeleted(ids); },
     onUndo: async (ids) => { for (const id of ids) await S.restore(id); refresh('data'); showToast(t('undo.done')); },
@@ -70,7 +83,7 @@ const ctx = {
   onView('home', (p, info) => { if (info.changed || dirty.home) { renderHome(info.changed && !dirty.home ? 'chart' : 'init'); dirty.home = false; } });
   onView('tx', (p, info) => { renderTx(info.changed ? p : {}); dirty.tx = false; });
   onView('budget', (p, info) => { renderBudget(); renderIou(); renderWealth(info.changed ? p : {}); dirty.budget = false; });
-  onView('settings', (p, info) => { renderSettings(info.changed ? p : {}); dirty.settings = false; });
+  onView('settings', (p, info) => { renderSettings(info.changed ? p : {}); renderSecurity(); dirty.settings = false; });
   startRouter();
   registerSW();
 
@@ -95,7 +108,7 @@ function refresh(reason = 'data') {
   if (v === 'home') { renderHome(reason === 'theme' ? 'chart' : reason); dirty.home = false; }
   else if (v === 'tx') { renderTx(); dirty.tx = false; }
   else if (v === 'budget') { renderBudget(); renderIou(); renderWealth(); dirty.budget = false; }
-  else if (v === 'settings') { renderSettings(); dirty.settings = false; }
+  else if (v === 'settings') { renderSettings(); renderSecurity(); dirty.settings = false; }
   if (reason === 'data') afterDataChange();
 }
 
@@ -173,26 +186,13 @@ function pickFile(inputEl) {
 async function importCSVFlow() {
   const file = await pickFile($('#fileCSV'));
   if (!file) return;
-  const { items, errors } = parseTransactionsCSV(await file.text());
-  if (!items.length) { await confirmDialog({ title: t('data.importFail'), body: errors.slice(0, 8).join('\n') || t('data.importNoRows'), okText: t('common.close'), okClass: 'primary' }); return; }
-  // ánh xạ tên ví → id (tạo mới nếu chưa có? không — dùng ví mặc định), tên danh mục → id (tự tạo)
-  const accByName = new Map(S.getAccounts({ includeArchived: true }).map((a) => [a.name.trim().toLowerCase(), a.id]));
-  const def = S.getSettings().defaultAccountId;
-  for (const it of items) {
-    it.accountId = accByName.get(String(it.accountName || '').trim().toLowerCase()) || def;
-    if (it.type === 'transfer') { it.toAccountId = accByName.get(String(it.toAccountName || '').trim().toLowerCase()) || null; if (!it.toAccountId || it.toAccountId === it.accountId) { it.type = 'expense'; } }
-  }
-  const { fresh, dupes } = dedupeAgainst(items, S.getAllRaw());
-  const preview = fresh.slice(0, 5).map((x) => `• ${x.date} ${x.type === 'income' ? '+' : x.type === 'expense' ? '−' : '⇄'}${formatVND(x.amount)} ${x.category}${x.note ? ' — ' + x.note : ''}`).join('\n');
-  const ok = await confirmDialog({
-    title: t('data.importTitle'),
-    body: t('data.importBody', { total: items.length, dupes, fresh: fresh.length, errors: errors.length ? t('data.importErrors', { n: errors.length }) : '', preview: preview + (fresh.length > 5 ? '\n…' : '') }),
-    okText: t('data.importOk', { n: fresh.length }), okClass: 'primary',
+  await openCsvWizard(file, {
+    onImport: async (fresh) => {
+      const n = await S.addMany(fresh, { source: 'import' });
+      refresh('data');
+      return n;
+    },
   });
-  if (!ok || !fresh.length) return;
-  const n = await S.addMany(fresh, { source: 'import' });
-  refresh('data');
-  showToast(t('data.imported', { n }));
 }
 async function restoreJSONFlow() {
   const file = await pickFile($('#fileJSON'));

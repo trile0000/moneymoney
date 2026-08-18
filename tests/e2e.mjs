@@ -275,7 +275,7 @@ check('CSV có BOM + cột account/tags', csv.charCodeAt(0) === 0xfeff && csv.sp
 await page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller, null, { timeout: 15000 }).catch(() => {});
 await sleep(1500);
 const sw = await page.evaluate(async () => { const keys = await caches.keys(); const c = await caches.open(keys.find((k) => k.startsWith('mm-')) || 'x'); return { controller: !!navigator.serviceWorker.controller, cached: (await c.keys()).length, keys }; });
-check('SW controlling & precache đủ (>= 68 file)', sw.controller && sw.cached >= 68, JSON.stringify(sw));
+check('SW controlling & precache đủ (>= 74 file)', sw.controller && sw.cached >= 74, JSON.stringify(sw));
 await goto('#/home');
 await ctx.setOffline(true);
 await page.reload().catch(() => {});
@@ -371,6 +371,69 @@ check('Cuộn xa vẫn ít DOM', (await page.evaluate(() => document.querySelect
   check('Sheet sửa: hiện ảnh, lightbox mở/đóng bằng Esc (sheet vẫn mở), gỡ ảnh → xóa blob', edThumb && lbOpen && lbClosed && removed.rid === null && removed.keys === 0, JSON.stringify({ edThumb, lbOpen, lbClosed, removed }));
   await op.screenshot({ path: `${OUT}/p1d-iou-home.png`, fullPage: true });
   await octx.close();
+}
+
+// 12c) P1d-2: wizard nhập CSV (sao kê VCB) + khóa PIN & mã hóa
+{
+  const wctx = await browser.newContext({ viewport: { width: 420, height: 860 }, locale: 'vi-VN', timezoneId: 'Asia/Ho_Chi_Minh' });
+  const wp = await wctx.newPage();
+  wp.on('pageerror', (e) => errors.push('P1D2 PAGEERROR ' + e.message));
+  wp.on('dialog', (d) => { errors.push('P1D2 DIALOG ' + d.message()); d.dismiss(); });
+  await wp.goto(BASE + '#/settings');
+  await wp.waitForFunction(() => window.__mm && window.__mm.state.getData(), null, { timeout: 10000 });
+  await wp.evaluate(async () => { const S = window.__mm.state; await S.updateSettings({ onboarded: true }, { silent: true }); await S.addTransaction({ type: 'expense', amount: 55000, categoryId: S.getCategories()[0].id, accountId: S.getAccounts()[0].id, date: '2026-08-10', note: 'bí mật cà phê' }); });
+  await sleep(500);
+  await wp.evaluate(() => { const m = document.getElementById('formSheet'); if (m.getAttribute('aria-hidden') === 'false') m.querySelector('[data-close]').click(); });
+  await sleep(200);
+  const [fch] = await Promise.all([wp.waitForEvent('filechooser'), wp.click('#importCSV')]);
+  await fch.setFiles(new URL('./fixtures-vcb.csv', import.meta.url).pathname);
+  await sleep(700);
+  const w1 = await wp.evaluate(() => ({ preset: document.getElementById('fs_preset').value, header: document.getElementById('fs_header').value, ths: document.querySelectorAll('#formSheet thead th').length }));
+  check('Wizard CSV bước 1: nhận dạng mẫu Vietcombank, dòng tiêu đề 3, xem trước 6 cột', w1.preset === 'vcb' && w1.header === '3' && w1.ths === 6, JSON.stringify(w1));
+  await wp.click('#fsSave'); await sleep(500);
+  const w2 = await wp.evaluate(() => ({ date: document.getElementById('fs_col_date').value, debit: document.getElementById('fs_col_debit').value, credit: document.getElementById('fs_col_credit').value, note: document.getElementById('fs_col_note').value, hint: document.querySelector('.csvw-preview .hint').textContent }));
+  check('Wizard bước 2: tự map Ngày/Ghi nợ/Ghi có/Nội dung, đọc 5/5 dòng', w2.date === '0' && w2.debit === '2' && w2.credit === '3' && w2.note === '5' && w2.hint.includes('5/5'), JSON.stringify(w2));
+  await wp.fill('#fs_templateName', 'VCB test'); await wp.click('#fsSave'); await sleep(600);
+  const w3 = await wp.evaluate(() => ({ status: document.querySelector('#formSheet .status-bar').textContent, cats: [...document.querySelectorAll('#formSheet tbody tr td:nth-child(3)')].map((x) => x.textContent) }));
+  check('Wizard bước 3: 5 hợp lệ, tự gán danh mục theo nội dung (GRAB→Đi lại, LUONG→Lương, SHOPEE→Mua sắm, HIGHLANDS→Ăn uống, EVN→Hóa đơn)', w3.status.includes('sẽ thêm 5') && JSON.stringify(w3.cats) === JSON.stringify(['Đi lại', 'Lương', 'Mua sắm', 'Ăn uống', 'Hóa đơn']), JSON.stringify(w3));
+  await wp.click('#fsSave'); await sleep(800);
+  const imp = await wp.evaluate(() => ({ n: window.__mm.state.getVisible().length, tpl: (window.__mm.state.getSettings().csvTemplates || []).map((x) => x.name), closed: document.getElementById('formSheet').getAttribute('aria-hidden') === 'true' }));
+  check('Wizard: nhập 5 giao dịch (tổng 6), lưu mẫu "VCB test", sheet đóng', imp.n === 6 && imp.tpl.includes('VCB test') && imp.closed, JSON.stringify(imp));
+  const [fch2] = await Promise.all([wp.waitForEvent('filechooser'), wp.click('#importCSV')]);
+  await fch2.setFiles(new URL('./fixtures-vcb.csv', import.meta.url).pathname); await sleep(600);
+  await wp.selectOption('#fs_preset', { label: '⭐ VCB test' }); await wp.click('#fsSave'); await sleep(400); await wp.click('#fsSave'); await sleep(500);
+  check('Wizard: nhập lại cùng file → 5 trùng, thêm 0', (await wp.evaluate(() => document.querySelector('#formSheet .status-bar').textContent)).includes('5 trùng'));
+  await wp.evaluate(() => document.querySelector('#formSheet [data-close]').click()); await sleep(300);
+  // PIN & mã hóa
+  await wp.evaluate(() => { location.hash = '#/settings?section=security'; }); await sleep(400);
+  await wp.click('#secEnable'); await sleep(300); await wp.click('#confirmModal .btn.primary'); await sleep(300);
+  await wp.fill('#fs_pin', '2468'); await wp.fill('#fs_pin2', '2468'); await wp.click('#fsSave'); await sleep(1500);
+  const rc = await wp.evaluate(() => { const m = document.getElementById('confirmBody').textContent.match(/[A-Z2-9]{4}(-[A-Z2-9]{4}){4}/); return m ? m[0] : null; });
+  await wp.evaluate(() => { const c = document.querySelector('#confirmModal input[type=checkbox]'); if (c) c.click(); }); await sleep(100);
+  await wp.click('#confirmModal .btn.primary'); await sleep(300);
+  const enc = await wp.evaluate(() => { const raw = JSON.parse(localStorage.getItem('mm_data_v3')); return { enc: raw.enc, plain: JSON.stringify(raw).includes('bí mật'), lockBtn: !document.getElementById('lockNow').hidden, v1: localStorage.getItem('mm_transactions_v1') }; });
+  check('Bật mã hóa: hiện mã khôi phục, localStorage là envelope AES-GCM (không còn chuỗi rõ), xóa key v1, nút khóa hiện', !!rc && enc.enc === 1 && enc.plain === false && enc.lockBtn && enc.v1 === null, JSON.stringify({ rc: !!rc, enc }));
+  await wp.reload(); await sleep(800);
+  const lk = await wp.evaluate(() => ({ lock: !document.getElementById('lockScreen').hidden, blurred: document.body.classList.contains('locked'), data: !!(window.__mm && window.__mm.state.getData()) }));
+  await wp.fill('#lockPin', '0000'); await wp.click('#lockSubmit'); await sleep(900);
+  const wrong = await wp.evaluate(() => document.getElementById('lockError').textContent);
+  await wp.fill('#lockPin', '2468'); await wp.click('#lockSubmit');
+  await wp.waitForFunction(() => window.__mm && window.__mm.state.getData(), null, { timeout: 10000 }); await sleep(300);
+  const un = await wp.evaluate(() => ({ hidden: document.getElementById('lockScreen').hidden, n: window.__mm.state.getVisible().length }));
+  check('Reload → màn hình khóa (chưa tải dữ liệu), PIN sai báo lỗi, PIN đúng mở và giải mã đủ 6 giao dịch', lk.lock && lk.blurred && !lk.data && wrong.includes('PIN sai') && un.hidden && un.n === 6, JSON.stringify({ lk, wrong, un }));
+  await wp.click('#lockNow'); await sleep(200);
+  await wp.click('#lockToggle'); await wp.fill('#lockRecovery', rc.toLowerCase()); await wp.click('#lockSubmit'); await sleep(1200);
+  check('Khóa ngay → mở bằng mã khôi phục (không phân biệt hoa thường)', await wp.evaluate(() => document.getElementById('lockScreen').hidden));
+  await wp.evaluate(() => { location.hash = '#/settings?section=security'; }); await sleep(300);
+  await wp.click('#secChangePin'); await sleep(200); await wp.fill('#fs_old', '2468'); await wp.fill('#fs_pin', '13579'); await wp.fill('#fs_pin2', '13579'); await wp.click('#fsSave'); await sleep(1500);
+  await wp.reload(); await sleep(700); await wp.fill('#lockPin', '13579'); await wp.click('#lockSubmit');
+  await wp.waitForFunction(() => window.__mm && window.__mm.state.getData(), null, { timeout: 10000 });
+  await wp.evaluate(() => { location.hash = '#/settings?section=security'; }); await sleep(300);
+  await wp.click('#secDisable'); await sleep(200); await wp.fill('#fs_old', '13579'); await wp.click('#fsSave'); await sleep(1200);
+  const dis = await wp.evaluate(() => { const raw = JSON.parse(localStorage.getItem('mm_data_v3')); return { enc: raw.enc, tx: (raw.transactions || []).length }; });
+  await wp.reload(); await sleep(700);
+  check('Đổi PIN → mở bằng PIN mới; tắt mã hóa → dữ liệu dạng thường, không còn màn hình khóa', dis.enc === undefined && dis.tx === 6 && (await wp.evaluate(() => document.getElementById('lockScreen').hidden && !!window.__mm)), JSON.stringify(dis));
+  await wctx.close();
 }
 
 // 13) Desktop screenshots

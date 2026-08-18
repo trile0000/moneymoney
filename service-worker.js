@@ -6,7 +6,7 @@
  * - Precache toàn bộ app shell kể cả Chart.js + font (self-host) → offline đầy đủ.
  * Đổi CACHE_VERSION mỗi lần deploy (node scripts/bump-version.mjs <version>).
  */
-const CACHE_VERSION = '2.4.0';
+const CACHE_VERSION = '2.5.0';
 const CACHE_NAME = `mm-${CACHE_VERSION}`;
 
 const PRECACHE = [
@@ -15,10 +15,13 @@ const PRECACHE = [
   './manifest.json',
   './css/app.css',
   './vendor/chart.umd.js',
+  './vendor/xlsx.mini.min.js',
   './js/features/accounts.js',
   './js/features/achievements.js',
   './js/features/budgets.js',
   './js/features/categories.js',
+  './js/features/crypto.js',
+  './js/features/csvWizard.js',
   './js/features/debts.js',
   './js/features/emergencyFund.js',
   './js/features/filters.js',
@@ -42,10 +45,12 @@ const PRECACHE = [
   './js/ui/charts.js',
   './js/ui/confetti.js',
   './js/ui/confirm.js',
+  './js/ui/csvWizard.js',
   './js/ui/editSheet.js',
   './js/ui/formSheet.js',
   './js/ui/gestures.js',
   './js/ui/list.js',
+  './js/ui/lock.js',
   './js/ui/modal.js',
   './js/ui/onboarding.js',
   './js/ui/pickers.js',
@@ -63,6 +68,7 @@ const PRECACHE = [
   './js/views/budget.js',
   './js/views/home.js',
   './js/views/iou.js',
+  './js/views/security.js',
   './js/views/settings.js',
   './js/views/tx.js',
   './js/views/wealth.js',

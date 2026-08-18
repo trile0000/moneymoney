@@ -2,6 +2,17 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/vi/1.0.0/). Phiên bản = `APP_VERSION` = `CACHE_VERSION`.
 
+## [2.5.0] — 2026-08-18 — P1d-2: wizard nhập CSV/Excel + mẫu sao kê ngân hàng VN, khóa PIN & mã hóa dữ liệu
+
+### Thêm
+- **Wizard nhập CSV/Excel 3 bước** (Cài đặt → Dữ liệu → Nhập CSV / Excel): (1) chọn sheet, **tự dò dòng tiêu đề** (sao kê thường có vài dòng thông tin trước bảng), **nhận dạng mẫu** — Vietcombank, Techcombank, MB, BIDV, VPBank, TPBank, ACB, MoMo, Money Lover, CSV của app; (2) **ánh xạ cột** (ngày, số tiền một cột ± hoặc hai cột ghi nợ/ghi có, nội dung, danh mục, loại, ví, mã giao dịch), định dạng ngày (tự dò d/m/y, m/d/y, y-m-d, Excel serial), ví nhập vào, **tự gán danh mục theo nội dung** (từ khóa VN: GRAB → Đi lại, SHOPEE → Mua sắm, EVN → Hóa đơn, NETFLIX → Giải trí… + **học từ giao dịch cũ**), **lưu ánh xạ thành mẫu** dùng lại; (3) xem trước, đếm trùng (theo mã giao dịch / vân tay), nhập. Số tiền hiểu mọi kiểu `1,250,000` / `1.250.000` / `1.250.000,50` / `(500)` / `-500.000`.
+- **Đọc file Excel** (.xlsx/.xls/.ods) bằng SheetJS mini (Apache-2.0) tự lưu trữ trong `vendor/`, nạp lười khi cần, có trong precache.
+- **Khóa PIN & mã hóa dữ liệu** (Cài đặt → Bảo mật): PIN 4–8 số → khóa AES-GCM-256 ngẫu nhiên bọc bằng PBKDF2-SHA256 (210k vòng) từ PIN và từ **mã khôi phục** 20 ký tự (hiện một lần, bắt buộc xác nhận đã lưu); toàn bộ `mm_data_v3` (localStorage + IndexedDB) trở thành envelope mã hóa — sai PIN không lộ gì; **màn hình khóa** khi mở app (nội dung phía sau chưa tải), chặn 30 giây sau 5 lần sai, mở bằng mã khôi phục khi quên PIN; **tự khóa** khi rời app 1/5/15/60 phút và nút 🔒 khóa ngay; đổi PIN, tạo mã khôi phục mới, tắt mã hóa (cần PIN). Bật mã hóa xóa bản sao dữ liệu cũ dạng thường (`mm_transactions_v1`, `mm_data_v2`). Sao lưu JSON luôn ở dạng thường (ghi rõ trong UI).
+- Unit test wizard (parse số/ngày, dò tiêu đề, preset VCB, Money Lover, cột loại, gán danh mục) và crypto (mở bằng PIN/mã khôi phục, sai PIN, đổi PIN, đổi mã) — 107 test tổng; E2E +11 kiểm tra (wizard với sao kê VCB mẫu `tests/fixtures-vcb.csv`, bật/khóa/mở/đổi/tắt mã hóa).
+
+### Sửa
+- Onboarding: đóng sheet bước 1 bằng ✕ giờ kết thúc onboarding thay vì nhảy sang bước 2; sheet đóng trước khi mở bước kế (tránh đóng nhầm sheet mới).
+
 ## [2.4.0] — 2026-08-17 — P1d-1: công nợ cá nhân, ảnh hóa đơn, onboarding 60 giây
 
 ### Thêm

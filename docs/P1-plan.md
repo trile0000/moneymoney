@@ -1,6 +1,6 @@
 # P1 — Kế hoạch Module A (Dòng tiền) + Module B (Ngân sách & Sức khỏe tài chính)
 
-> Trạng thái: **đã duyệt (17/08/2026)**. P1a hoàn thành ở v2.1.0, P1b ở v2.2.0, P1c ở v2.3.0, P1d-1 (công nợ, ảnh hóa đơn, onboarding) ở v2.4.0; P1d-2 (wizard CSV + sao kê VN, PIN + mã hóa) tiếp theo. Song ngữ làm ở P1a; PIN/mã hóa ở P1d.
+> Trạng thái: **đã duyệt (17/08/2026)**. P1a hoàn thành ở v2.1.0, P1b ở v2.2.0, P1c ở v2.3.0, P1d-1 (công nợ, ảnh hóa đơn, onboarding) ở v2.4.0, P1d-2 (wizard CSV/Excel + sao kê VN, PIN + mã hóa) ở v2.5.0 — **P1 hoàn tất**; tiếp theo P2 (Module C, D). Song ngữ làm ở P1a; PIN/mã hóa ở P1d.
 
 ## 0. Nguyên tắc giữ nguyên từ P0
 - Static, không backend, không API key; vanilla ES modules; không framework.

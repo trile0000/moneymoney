@@ -79,9 +79,9 @@ function step({ title, intro, fields, values, stepNo }) {
       fields,
       values,
       saveText: stepNo === 3 ? t('onb.finish') : t('onb.next'),
-      onSave: (v) => { finishWith(v); },
+      onSave: (v, a) => { a.close(); finishWith(v); },
       extraText: t('onb.skip'),
-      onExtra: (a) => { finishWith('skip'); a.close(); },
+      onExtra: (a) => { a.close(); finishWith('skip'); },
     });
     const p = document.createElement('p');
     p.className = 'note-box'; p.textContent = intro;

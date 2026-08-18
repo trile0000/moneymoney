@@ -218,6 +218,8 @@ export function defaultSettings() {
     forecastMonths: 6,
     badges: [], // [{ key, at }]
     onboarded: false, // P1d: đã qua onboarding (hoặc là người dùng cũ)
+    csvTemplates: [], // P1d-2: mẫu ánh xạ cột đã lưu [{ name, map{field: headerName}, dateFormat, autoCategory }]
+    lock: { autoLockMin: 5 }, // P1d-2: tự khóa (phút) khi đang bật mã hóa
   };
 }
 
@@ -247,6 +249,8 @@ export function migrateSettings(raw) {
   if (!Array.isArray(out.cardOrder)) out.cardOrder = [];
   out.emergencyExtra = Math.max(0, Number(out.emergencyExtra) || 0);
   if (!Array.isArray(out.badges)) out.badges = [];
+  if (!Array.isArray(out.csvTemplates)) out.csvTemplates = [];
+  out.lock = { ...d.lock, ...(out.lock && typeof out.lock === 'object' ? out.lock : {}) };
   out.forecastMonths = [3, 6, 12].includes(Number(out.forecastMonths)) ? Number(out.forecastMonths) : 6;
   out.emergencyMonths = [3, 6, 12].includes(Number(out.emergencyMonths)) ? Number(out.emergencyMonths) : 6;
   return out;

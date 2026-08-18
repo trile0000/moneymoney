@@ -491,3 +491,16 @@ input[type="color"] { padding: 4px; height: 44px; }
 .iou-summary .kpi .val { font-size: 15px; }
 .iou-line a { color: var(--primary-700); font-weight: 700; text-decoration: none; }
 .iou-line a:hover { text-decoration: underline; }
+/* P1d-2: wizard CSV */
+.csvw-preview { margin-top: 8px; }
+.csvw-table th.on { color: var(--primary-700); background: var(--primary-50); }
+.csvw-table td, .csvw-table th { text-align: left; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+/* P1d-2: màn hình khóa */
+.lock { position: fixed; inset: 0; z-index: 13000; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 20px; }
+.lock-card { width: 100%; max-width: 360px; background: var(--surface); border: 1px solid var(--ring); border-radius: 18px; padding: 24px 20px; box-shadow: var(--shadow); text-align: center; }
+.lock-card img { display: block; margin: 0 auto 8px; }
+.lock-card h2 { margin: 4px 0 6px; }
+.lock-card form { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.lock-card input { text-align: center; font-size: 22px; letter-spacing: .3em; }
+.lock-card #lockRecovery { letter-spacing: .05em; font-size: 16px; text-transform: uppercase; }
+body.locked > .container, body.locked > .tabbar { filter: blur(6px); pointer-events: none; user-select: none; }

@@ -38,6 +38,7 @@
         <h1 data-i18n="app.title">Quản Lý Chi Tiêu <span class="offline-badge" aria-live="polite" data-i18n="app.offline">Offline</span></h1>
       </div>
       <div class="actions">
+        <button id="lockNow" class="btn ghost icon-only" type="button" hidden data-i18n-aria="lock.lockNow" aria-label="Khóa ngay" title="Khóa ngay">🔒</button>
         <button id="themeToggle" class="btn ghost icon-only" type="button" data-i18n-aria="settings.theme" aria-label="Chế độ sáng/tối" title="Sáng / Tối">🌗</button>
         <a href="#/settings" class="btn ghost" data-i18n="nav.settings">⚙️ Cài đặt</a>
       </div>
@@ -440,19 +441,37 @@
             </div>
           </div>
 
+          <div class="card" id="sec-security">
+            <div class="card-body">
+              <h2 data-i18n="sec.title">Bảo mật</h2>
+              <div id="secStatus" class="status-bar status--neutral"></div>
+              <div class="data-actions">
+                <button id="secEnable" class="btn primary" type="button" data-i18n="sec.enable">🔐 Bật khóa PIN &amp; mã hóa</button>
+                <button id="secChangePin" class="btn ghost" type="button" hidden data-i18n="sec.changePin">Đổi PIN</button>
+                <button id="secRecovery" class="btn ghost" type="button" hidden data-i18n="sec.newRecovery">Tạo mã khôi phục mới</button>
+                <button id="secDisable" class="btn danger" type="button" hidden data-i18n="sec.disable">Tắt mã hóa</button>
+              </div>
+              <div class="form-group" id="secAutoLockGroup" hidden>
+                <label for="secAutoLock" data-i18n="sec.autoLock">Tự khóa khi rời app</label>
+                <select id="secAutoLock"><option value="0" data-i18n="sec.al0">Không</option><option value="1" data-i18n="sec.al1">Sau 1 phút</option><option value="5" data-i18n="sec.al5">Sau 5 phút</option><option value="15" data-i18n="sec.al15">Sau 15 phút</option><option value="60" data-i18n="sec.al60">Sau 1 giờ</option></select>
+              </div>
+              <p class="hint" data-i18n="sec.hint">Dữ liệu được mã hóa AES-256 ngay trên máy bằng khóa dẫn xuất từ PIN (PBKDF2). Không có cách đặt lại PIN — hãy lưu MÃ KHÔI PHỤC và sao lưu JSON định kỳ. Sao lưu JSON luôn ở dạng thường.</p>
+            </div>
+          </div>
+
           <div class="card" id="sec-data">
             <div class="card-body">
               <h2 data-i18n="settings.data">Dữ liệu &amp; sao lưu</h2>
               <div class="data-actions">
                 <button id="backupJSON" class="btn ghost" type="button" data-i18n="data.backup">💾 Sao lưu JSON</button>
                 <button id="restoreJSON" class="btn ghost" type="button" data-i18n="data.restore">📂 Khôi phục JSON</button>
-                <button id="importCSV" class="btn ghost" type="button" data-i18n="data.importCSV">📥 Nhập CSV</button>
+                <button id="importCSV" class="btn ghost" type="button" data-i18n="data.importCSV">📥 Nhập CSV / Excel</button>
                 <button id="exportCSVAll" class="btn ghost" type="button" data-i18n="data.exportAll">📄 Xuất CSV (tất cả)</button>
                 <button id="clearAll" class="btn danger" type="button" data-i18n="data.clearAll">🗑️ Xóa tất cả giao dịch</button>
               </div>
               <div id="storageInfo" class="hint"></div>
               <input id="fileJSON" type="file" accept="application/json,.json" class="sr-only" tabindex="-1" aria-hidden="true" />
-              <input id="fileCSV" type="file" accept="text/csv,.csv,text/plain" class="sr-only" tabindex="-1" aria-hidden="true" />
+              <input id="fileCSV" type="file" accept="text/csv,.csv,text/plain,.xlsx,.xls,.xlsm,.ods,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="sr-only" tabindex="-1" aria-hidden="true" />
               <hr class="sep" />
               <p class="section-title" data-i18n="settings.privacy">Riêng tư</p>
               <p class="hint" data-i18n="settings.privacyBody">Toàn bộ dữ liệu tài chính chỉ nằm trên thiết bị này (localStorage + IndexedDB của trình duyệt). App không gửi dữ liệu đi bất kỳ đâu, không có analytics. Sao lưu JSON định kỳ để phòng mất máy hoặc xóa dữ liệu trình duyệt.</p>
@@ -547,7 +566,21 @@
 
   <script src="vendor/chart.umd.js" defer></script>
   <script type="module" src="js/main.js"></script>
-  <div id="lightbox" class="lightbox" hidden aria-hidden="true" role="dialog" data-i18n-aria="receipt.view" aria-label="Xem ảnh hóa đơn">
+    <div id="lockScreen" class="lock" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="lockTitle">
+    <div class="lock-card">
+      <img src="assets/mascot/sm/tiger_logo.webp" alt="" width="72" height="72" />
+      <h2 id="lockTitle" data-i18n="lock.title">Nhập mã PIN</h2>
+      <p id="lockHint" class="hint" data-i18n="lock.hint">Dữ liệu đang được mã hóa trên máy này.</p>
+      <form id="lockForm" novalidate>
+        <input id="lockPin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="one-time-code" data-i18n-aria="lock.pin" aria-label="PIN" placeholder="••••" />
+        <input id="lockRecovery" type="text" autocomplete="off" hidden data-i18n-aria="lock.recovery" aria-label="Mã khôi phục" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX" />
+        <div id="lockError" class="form-error" role="alert" aria-live="assertive"></div>
+        <button id="lockSubmit" class="btn primary" type="submit" data-i18n="lock.unlock">Mở khóa</button>
+        <button id="lockToggle" class="btn ghost small" type="button" data-i18n="lock.forgot">Quên PIN? Dùng mã khôi phục</button>
+      </form>
+    </div>
+  </div>
+<div id="lightbox" class="lightbox" hidden aria-hidden="true" role="dialog" data-i18n-aria="receipt.view" aria-label="Xem ảnh hóa đơn">
     <button class="icon-btn lb-close" type="button" data-i18n-aria="common.close" aria-label="Đóng">✕</button>
     <img alt="" />
   </div>
