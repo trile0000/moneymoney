@@ -2,6 +2,12 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/vi/1.0.0/). Phiên bản = `APP_VERSION` = `CACHE_VERSION`.
 
+## [2.6.3] — 2026-08-18 — Lighthouse: a11y 100 & rút ngắn chuỗi tải module
+
+### Cải thiện
+- **Accessibility**: huy hiệu chưa mở khóa dùng màu chữ đạt tương phản AA (không còn làm mờ cả chip); tiêu đề KPI đổi `h4` → `h3` để thứ tự heading tuần tự (h1 → h2 → h3).
+- **Hiệu năng**: `modulepreload` cho toàn bộ ES module → trình duyệt tải song song thay vì khám phá từng tầng (chuỗi 3 tầng ~900 ms trên 4G chậm); preload thêm font Quicksand (nằm trên đường găng LCP).
+
 ## [2.6.2] — 2026-08-18 — Tối ưu theo Lighthouse mobile (80 → mục tiêu 90+)
 
 ### Cải thiện

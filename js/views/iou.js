@@ -23,9 +23,9 @@ export function renderIou() {
   empty.style.display = s.people.length ? 'none' : 'flex';
   sum.hidden = !s.people.length;
   if (s.people.length) {
-    sum.appendChild(el('div', { className: 'kpi' }, [el('h4', { text: t('iou.receivable') }), el('div', { className: 'val in', text: formatVND(s.receivable, { withUnit: false }) })]));
-    sum.appendChild(el('div', { className: 'kpi' }, [el('h4', { text: t('iou.payable') }), el('div', { className: 'val out', text: formatVND(s.payable, { withUnit: false }) })]));
-    sum.appendChild(el('div', { className: 'kpi' }, [el('h4', { text: t('iou.open') }), el('div', { className: 'val', text: String(s.openCount) })]));
+    sum.appendChild(el('div', { className: 'kpi' }, [el('h3', { text: t('iou.receivable') }), el('div', { className: 'val in', text: formatVND(s.receivable, { withUnit: false }) })]));
+    sum.appendChild(el('div', { className: 'kpi' }, [el('h3', { text: t('iou.payable') }), el('div', { className: 'val out', text: formatVND(s.payable, { withUnit: false }) })]));
+    sum.appendChild(el('div', { className: 'kpi' }, [el('h3', { text: t('iou.open') }), el('div', { className: 'val', text: String(s.openCount) })]));
   }
   for (const p of s.people) {
     const sub = p.open

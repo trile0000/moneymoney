@@ -339,9 +339,9 @@ function renderNetWorth() {
   const sum = $('#nwSummary'), items = $('#nwItems');
   clear(sum); clear(items);
   const nw = netWorthNow();
-  sum.appendChild(el('div', { className: 'kpi' }, [el('h4', { text: t('nw.assets') }), el('div', { className: 'val in', text: formatVND(nw.assets, { withUnit: false }) })]));
-  sum.appendChild(el('div', { className: 'kpi' }, [el('h4', { text: t('nw.liabilities') }), el('div', { className: 'val out', text: formatVND(nw.liabilities, { withUnit: false }) })]));
-  sum.appendChild(el('div', { className: 'kpi' }, [el('h4', { text: t('nw.net') }), el('div', { className: 'val' + (nw.net < 0 ? ' out' : ''), text: formatVND(nw.net, { withUnit: false }) })]));
+  sum.appendChild(el('div', { className: 'kpi' }, [el('h3', { text: t('nw.assets') }), el('div', { className: 'val in', text: formatVND(nw.assets, { withUnit: false }) })]));
+  sum.appendChild(el('div', { className: 'kpi' }, [el('h3', { text: t('nw.liabilities') }), el('div', { className: 'val out', text: formatVND(nw.liabilities, { withUnit: false }) })]));
+  sum.appendChild(el('div', { className: 'kpi' }, [el('h3', { text: t('nw.net') }), el('div', { className: 'val' + (nw.net < 0 ? ' out' : ''), text: formatVND(nw.net, { withUnit: false }) })]));
   for (const it of nw.items) {
     const asset = it.kind === 'asset' || it.kind === 'liability' ? S.getAssets().find((a) => a.name === it.name && (a.liability ? -a.value : a.value) === it.value) : null;
     const icon = it.kind === 'account' ? (ACCOUNT_ICONS[it.type] || '💵') : it.kind === 'debt' ? '🏦' : it.kind === 'iou' ? '🤝' : (ASSET_ICONS[it.type] || '📦');

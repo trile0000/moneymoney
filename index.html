@@ -16,6 +16,65 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="preload" href="assets/fonts/Baloo2-latin-vi.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="assets/mascot/sm/tiger_logo_96.webp" as="image" type="image/webp" />
+  <link rel="preload" href="assets/fonts/Quicksand-latin-vi.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="modulepreload" href="js/features/accounts.js" />
+  <link rel="modulepreload" href="js/features/achievements.js" />
+  <link rel="modulepreload" href="js/features/allocation.js" />
+  <link rel="modulepreload" href="js/features/budgets.js" />
+  <link rel="modulepreload" href="js/features/categories.js" />
+  <link rel="modulepreload" href="js/features/crypto.js" />
+  <link rel="modulepreload" href="js/features/csvWizard.js" />
+  <link rel="modulepreload" href="js/features/debts.js" />
+  <link rel="modulepreload" href="js/features/emergencyFund.js" />
+  <link rel="modulepreload" href="js/features/filters.js" />
+  <link rel="modulepreload" href="js/features/forecast.js" />
+  <link rel="modulepreload" href="js/features/goals.js" />
+  <link rel="modulepreload" href="js/features/health.js" />
+  <link rel="modulepreload" href="js/features/importExport.js" />
+  <link rel="modulepreload" href="js/features/insights.js" />
+  <link rel="modulepreload" href="js/features/iou.js" />
+  <link rel="modulepreload" href="js/features/networth.js" />
+  <link rel="modulepreload" href="js/features/recurring.js" />
+  <link rel="modulepreload" href="js/features/rule503020.js" />
+  <link rel="modulepreload" href="js/i18n.js" />
+  <link rel="modulepreload" href="js/main.js" />
+  <link rel="modulepreload" href="js/migrate.js" />
+  <link rel="modulepreload" href="js/router.js" />
+  <link rel="modulepreload" href="js/state.js" />
+  <link rel="modulepreload" href="js/storage.js" />
+  <link rel="modulepreload" href="js/ui/amountInput.js" />
+  <link rel="modulepreload" href="js/ui/cards.js" />
+  <link rel="modulepreload" href="js/ui/charts.js" />
+  <link rel="modulepreload" href="js/ui/confetti.js" />
+  <link rel="modulepreload" href="js/ui/confirm.js" />
+  <link rel="modulepreload" href="js/ui/csvWizard.js" />
+  <link rel="modulepreload" href="js/ui/editSheet.js" />
+  <link rel="modulepreload" href="js/ui/formSheet.js" />
+  <link rel="modulepreload" href="js/ui/gestures.js" />
+  <link rel="modulepreload" href="js/ui/list.js" />
+  <link rel="modulepreload" href="js/ui/lock.js" />
+  <link rel="modulepreload" href="js/ui/modal.js" />
+  <link rel="modulepreload" href="js/ui/onboarding.js" />
+  <link rel="modulepreload" href="js/ui/pickers.js" />
+  <link rel="modulepreload" href="js/ui/receipt.js" />
+  <link rel="modulepreload" href="js/ui/swUpdate.js" />
+  <link rel="modulepreload" href="js/ui/theme.js" />
+  <link rel="modulepreload" href="js/ui/toast.js" />
+  <link rel="modulepreload" href="js/ui/undo.js" />
+  <link rel="modulepreload" href="js/utils/csv.js" />
+  <link rel="modulepreload" href="js/utils/date.js" />
+  <link rel="modulepreload" href="js/utils/dom.js" />
+  <link rel="modulepreload" href="js/utils/id.js" />
+  <link rel="modulepreload" href="js/utils/money.js" />
+  <link rel="modulepreload" href="js/version.js" />
+  <link rel="modulepreload" href="js/views/budget.js" />
+  <link rel="modulepreload" href="js/views/home.js" />
+  <link rel="modulepreload" href="js/views/invest.js" />
+  <link rel="modulepreload" href="js/views/iou.js" />
+  <link rel="modulepreload" href="js/views/security.js" />
+  <link rel="modulepreload" href="js/views/settings.js" />
+  <link rel="modulepreload" href="js/views/tx.js" />
+  <link rel="modulepreload" href="js/views/wealth.js" />
   <link rel="stylesheet" href="css/app.css" />
   <script>
     // Áp theme sớm để không chớp sáng/tối (đọc trực tiếp settings v3, fallback hệ thống)
@@ -60,9 +119,9 @@
               <div class="mascot-center"><img id="mascotBalance" src="assets/mascot/sm/tiger_income.webp" alt="" width="80" height="80" fetchpriority="high" /></div>
               <div id="balanceStatus" class="status-bar status--neutral" role="status" aria-live="polite"></div>
               <div class="kpis" role="group" data-i18n-aria="home.kpiGroup" aria-label="Tổng kết tháng đang chọn">
-                <div class="kpi"><h4 data-i18n="home.income">Tổng thu (đ)</h4><div class="val" id="sumIncome">0</div></div>
-                <div class="kpi"><h4 data-i18n="home.expense">Tổng chi (đ)</h4><div class="val" id="sumExpense">0</div></div>
-                <div class="kpi"><h4 data-i18n="home.balance">Số dư (đ)</h4><div class="val" id="sumBalance">0</div></div>
+                <div class="kpi"><h3 data-i18n="home.income">Tổng thu (đ)</h3><div class="val" id="sumIncome">0</div></div>
+                <div class="kpi"><h3 data-i18n="home.expense">Tổng chi (đ)</h3><div class="val" id="sumExpense">0</div></div>
+                <div class="kpi"><h3 data-i18n="home.balance">Số dư (đ)</h3><div class="val" id="sumBalance">0</div></div>
               </div>
             </div>
           </div>
