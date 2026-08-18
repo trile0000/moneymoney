@@ -38,8 +38,14 @@ export function presetRange(name, today = new Date()) {
  * @param {object} f  filter
  * @param {object} ctx { categoryIds?: Set (id + con), accountsById?: Map, categoriesById?: Map }
  */
+// Cache chuỗi tìm kiếm đã chuẩn hóa theo từng giao dịch (giao dịch là object bất biến — sửa sẽ tạo object mới);
+// làm mới toàn bộ khi ctx.gen (phiên bản dữ liệu / tên ví, danh mục) đổi.
+let hayCache = new WeakMap();
+let hayGen = null;
+
 export function applyFilter(items, f, ctx = {}) {
   if (!f) return items;
+  if (ctx.gen !== undefined && ctx.gen !== hayGen) { hayCache = new WeakMap(); hayGen = ctx.gen; }
   const q = normalizeVN(f.q);
   const qDigits = q.replace(/\D/g, '');
   const catSet = f.categoryId ? (ctx.categoryIds || new Set([f.categoryId])) : null;
@@ -60,7 +66,8 @@ export function applyFilter(items, f, ctx = {}) {
       const acc2 = ctx.accountsById && t.toAccountId ? ctx.accountsById.get(t.toAccountId) : null;
       const cat = ctx.categoriesById ? ctx.categoriesById.get(t.categoryId) : null;
       const parent = cat && cat.parentId && ctx.categoriesById ? ctx.categoriesById.get(cat.parentId) : null;
-      const hay = normalizeVN([t.note, t.category, cat && cat.name, parent && parent.name, acc && acc.name, acc2 && acc2.name, ...(t.tags || [])].filter(Boolean).join(' '));
+      let hay = hayCache.get(t);
+      if (hay === undefined) { hay = normalizeVN([t.note, t.category, cat && cat.name, parent && parent.name, acc && acc.name, acc2 && acc2.name, ...(t.tags || [])].filter(Boolean).join(' ')); hayCache.set(t, hay); }
       const amountStr = String(t.amount);
       const hit = hay.includes(q) || (qDigits.length >= 3 && amountStr.includes(qDigits));
       if (!hit) return false;

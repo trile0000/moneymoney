@@ -79,6 +79,7 @@ function step({ title, intro, fields, values, stepNo }) {
       fields,
       values,
       saveText: stepNo === 3 ? t('onb.finish') : t('onb.next'),
+      hideCancel: true,
       onSave: (v, a) => { a.close(); finishWith(v); },
       extraText: t('onb.skip'),
       onExtra: (a) => { a.close(); finishWith('skip'); },

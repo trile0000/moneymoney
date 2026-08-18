@@ -258,6 +258,7 @@ async function clearAllFlow() {
 
 // ---------- Sự kiện toàn cục ----------
 function bindGlobal() {
+  $('#rerunOnboarding').addEventListener('click', () => runOnboarding(ctx));
   $('#themeToggle').addEventListener('click', async () => {
     const nt = nextTheme(S.getSettings().theme);
     await S.updateSettings({ theme: nt }, { silent: true });

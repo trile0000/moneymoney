@@ -6,7 +6,7 @@
  * - Precache toàn bộ app shell kể cả Chart.js + font (self-host) → offline đầy đủ.
  * Đổi CACHE_VERSION mỗi lần deploy (node scripts/bump-version.mjs <version>).
  */
-const CACHE_VERSION = '2.6.0';
+const CACHE_VERSION = '2.6.1';
 const CACHE_NAME = `mm-${CACHE_VERSION}`;
 
 const PRECACHE = [

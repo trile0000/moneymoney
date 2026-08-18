@@ -1,6 +1,6 @@
 {
   "name": "moneymoney",
-  "version": "2.6.0",
+  "version": "2.6.1",
   "private": true,
   "description": "Quản Lý Chi Tiêu — PWA tĩnh, offline, dữ liệu trên máy người dùng",
   "type": "module",

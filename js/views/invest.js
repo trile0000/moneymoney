@@ -103,11 +103,11 @@ function renderPlan(s) {
   box.appendChild(el('div', { className: 'ef-line', text: t('inv.suggestLine', { surplus: formatVND(s.suggest.surplus), ef: formatVND(s.suggest.efPart), inv: formatVND(s.suggest.investable) }) }));
   box.appendChild(el('div', { className: 'ef-line', text: t('inv.planLine', { monthly: formatVND(s.monthly), years: s.years }) }));
   const table = el('table', { className: 'sched inv-table' });
-  table.appendChild(el('thead', {}, [el('tr', {}, [t('inv.colClass'), t('inv.colPct'), t('inv.colMonthly'), t('inv.colReturn'), t('inv.colEnd')].map((h) => el('th', { text: h })))]));
+  table.appendChild(el('thead', {}, [el('tr', {}, [t('inv.colClass'), t('inv.colMonthly'), t('inv.colReturn'), t('inv.colEnd')].map((h) => el('th', { text: h })))]));
   const tb = el('tbody');
   for (const cls of ASSET_CLASSES) {
     if (!s.target[cls] && !s.plan.projectedByClass[cls]) continue;
-    tb.appendChild(el('tr', {}, [el('td', { text: classLabel(cls) }), el('td', { text: `${s.target[cls]}%` }), el('td', { text: formatVND(s.plan.perClass[cls], { withUnit: false }) }), el('td', { text: `${s.returns[cls]}%` }), el('td', { text: formatVND(s.plan.projectedByClass[cls], { withUnit: false }) })]));
+    tb.appendChild(el('tr', {}, [el('td', {}, [classLabel(cls), el('small', { text: `${s.target[cls]}%` })]), el('td', { text: formatVND(s.plan.perClass[cls], { withUnit: false }) }), el('td', { text: `${s.returns[cls]}%` }), el('td', { text: formatVND(s.plan.projectedByClass[cls], { withUnit: false }) })]));
   }
   table.appendChild(tb);
   box.appendChild(el('div', { className: 'sched-wrap' }, [table]));

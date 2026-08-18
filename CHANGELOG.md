@@ -2,6 +2,15 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/vi/1.0.0/). Phiên bản = `APP_VERSION` = `CACHE_VERSION`.
 
+## [2.6.1] — 2026-08-18 — Tinh chỉnh sau P2
+
+### Sửa / cải thiện
+- Sheet chỉ xem (lịch trả nợ, chi tiết công nợ) và các bước onboarding không còn nút "Hủy" thừa (đã có "Đóng"/"Bỏ qua").
+- Bảng kế hoạch DCA gọn hơn trên điện thoại (gộp % mục tiêu vào tên lớp, nhãn cột ngắn).
+- Heatmap chi theo ngày: chỉ ô có chi mới nằm trong thứ tự Tab (bớt 31 điểm dừng cho bàn phím/trình đọc màn hình).
+- Cài đặt → Dữ liệu: nút **"Thiết lập nhanh"** để chạy lại onboarding 3 bước bất cứ lúc nào.
+- Tìm kiếm: cache chuỗi đã bỏ dấu theo từng giao dịch → gõ liên tiếp trên 10.000+ giao dịch mượt hơn.
+
 ## [2.6.0] — 2026-08-18 — P2 Module C: phân bổ đầu tư theo lớp tài sản (không gợi ý mã, có disclaimer)
 
 ### Thêm

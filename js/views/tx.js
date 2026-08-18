@@ -221,7 +221,7 @@ export function renderTx(params = {}) {
 
 function renderList() {
   $$('[data-preset]').forEach((b) => b.classList.toggle('active', b.dataset.preset === activePreset));
-  const ctxF = { categoryIds: filter.categoryId ? S.getCategoryDescendants(filter.categoryId) : null, accountsById: new Map(S.getAccounts({ includeArchived: true }).map((a) => [a.id, a])), categoriesById: new Map(S.getCategories({ includeArchived: true }).map((c) => [c.id, c])) };
+  const ctxF = { gen: ctx.version ? ctx.version() : 0, categoryIds: filter.categoryId ? S.getCategoryDescendants(filter.categoryId) : null, accountsById: new Map(S.getAccounts({ includeArchived: true }).map((a) => [a.id, a])), categoriesById: new Map(S.getCategories({ includeArchived: true }).map((c) => [c.id, c])) };
   lastFiltered = applyFilter(S.getVisible(), filter, ctxF);
   list.setItems(lastFiltered);
   const isDefault = JSON.stringify({ ...filter, min: filter.min ?? null, max: filter.max ?? null }) === JSON.stringify({ ...emptyFilter(), ...presetRange('thisMonth') });

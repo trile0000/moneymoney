@@ -155,7 +155,7 @@ function renderHeatmap(holder, m, key) {
     const v = daily[d];
     const lvl = !v ? 0 : max ? Math.min(4, 1 + Math.floor((v / max) * 3.999)) : 1;
     const date = `${key}-${String(d + 1).padStart(2, '0')}`;
-    grid.appendChild(el('div', { className: `hm-cell l${lvl}`, attrs: { role: 'gridcell', title: `${dateLabel(date)}: ${formatVND(v)}`, 'aria-label': `${dateLabel(date)}: ${formatVND(v)}`, tabindex: '0' } }, [el('span', { className: 'hm-day', text: String(d + 1) })]));
+    grid.appendChild(el('div', { className: `hm-cell l${lvl}`, attrs: { role: 'gridcell', title: `${dateLabel(date)}: ${formatVND(v)}`, 'aria-label': `${dateLabel(date)}: ${formatVND(v)}`, tabindex: v > 0 ? '0' : '-1' } }, [el('span', { className: 'hm-day', text: String(d + 1) })]));
   }
   holder.appendChild(grid);
   holder.appendChild(el('div', { className: 'hm-legend' }, [el('span', { text: '0' }), ...[1, 2, 3, 4].map((l) => el('span', { className: `hm-cell l${l}` })), el('span', { text: formatVND(max) })]));

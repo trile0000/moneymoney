@@ -98,6 +98,7 @@ function openPersonSheet(key) {
     fields: [],
     values: {},
     saveText: t('common.close'),
+    hideCancel: true,
     onSave: () => {},
     extraText: p.balance > 0 ? t('iou.recordRepayIn') : p.balance < 0 ? t('iou.recordRepayOut') : null,
     onExtra: p.open ? (a) => { a.close(); openIouForm('repay', { person: p.person, direction: p.balance > 0 ? 'in' : 'out', suggest: Math.abs(p.balance) }); } : null,

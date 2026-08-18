@@ -11,7 +11,7 @@ import { t } from '../i18n.js';
  * })
  * → { close, setError, getValues, root }
  */
-export function openFormSheet({ title, fields, values = {}, onSave, deleteText, onDelete, extraText, onExtra, saveText }) {
+export function openFormSheet({ title, fields, values = {}, onSave, deleteText, onDelete, extraText, onExtra, saveText, hideCancel = false }) {
   const modal = $('#formSheet');
   const form = $('#formSheetForm');
   $('#formSheetTitle').textContent = title;
@@ -72,6 +72,8 @@ export function openFormSheet({ title, fields, values = {}, onSave, deleteText, 
   const saveBtn = $('#fsSave');
   const delBtn = $('#fsDelete');
   const extraBtn = $('#fsExtra');
+  const cancelBtn = $('#fsCancel');
+  if (cancelBtn) cancelBtn.style.display = hideCancel ? 'none' : '';
   saveBtn.textContent = saveText || t('common.save');
   if (deleteText && onDelete) { delBtn.style.display = ''; delBtn.textContent = deleteText; } else delBtn.style.display = 'none';
   if (extraText && onExtra) { extraBtn.style.display = ''; extraBtn.textContent = extraText; } else extraBtn.style.display = 'none';

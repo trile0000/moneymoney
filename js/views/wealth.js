@@ -308,6 +308,7 @@ function openScheduleSheet(debt) {
     fields: [{ key: 'extra', label: t('debt.prepayInput'), type: 'amount', placeholder: 'VD: 1tr', onInput: (a) => drawPrepay(a.getValues().extra || 0) }],
     values: {},
     saveText: t('common.close'),
+    hideCancel: true,
     onSave: () => {},
   });
   const prepay = el('div', { className: 'note-box', hidden: true });
