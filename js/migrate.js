@@ -220,6 +220,7 @@ export function defaultSettings() {
     onboarded: false, // P1d: đã qua onboarding (hoặc là người dùng cũ)
     csvTemplates: [], // P1d-2: mẫu ánh xạ cột đã lưu [{ name, map{field: headerName}, dateFormat, autoCategory }]
     lock: { autoLockMin: 5 }, // P1d-2: tự khóa (phút) khi đang bật mã hóa
+    invest: { answers: {}, score: null, profile: null, monthly: null, years: 10, returns: null, acceptedAt: null }, // P2 Module C
   };
 }
 
@@ -251,6 +252,8 @@ export function migrateSettings(raw) {
   if (!Array.isArray(out.badges)) out.badges = [];
   if (!Array.isArray(out.csvTemplates)) out.csvTemplates = [];
   out.lock = { ...d.lock, ...(out.lock && typeof out.lock === 'object' ? out.lock : {}) };
+  out.invest = { ...d.invest, ...(out.invest && typeof out.invest === 'object' ? out.invest : {}) };
+  if (!out.invest.answers || typeof out.invest.answers !== 'object') out.invest.answers = {};
   out.forecastMonths = [3, 6, 12].includes(Number(out.forecastMonths)) ? Number(out.forecastMonths) : 6;
   out.emergencyMonths = [3, 6, 12].includes(Number(out.emergencyMonths)) ? Number(out.emergencyMonths) : 6;
   return out;

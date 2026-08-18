@@ -6,7 +6,7 @@
  * - Precache toàn bộ app shell kể cả Chart.js + font (self-host) → offline đầy đủ.
  * Đổi CACHE_VERSION mỗi lần deploy (node scripts/bump-version.mjs <version>).
  */
-const CACHE_VERSION = '2.5.0';
+const CACHE_VERSION = '2.6.0';
 const CACHE_NAME = `mm-${CACHE_VERSION}`;
 
 const PRECACHE = [
@@ -18,6 +18,7 @@ const PRECACHE = [
   './vendor/xlsx.mini.min.js',
   './js/features/accounts.js',
   './js/features/achievements.js',
+  './js/features/allocation.js',
   './js/features/budgets.js',
   './js/features/categories.js',
   './js/features/crypto.js',
@@ -67,6 +68,7 @@ const PRECACHE = [
   './js/version.js',
   './js/views/budget.js',
   './js/views/home.js',
+  './js/views/invest.js',
   './js/views/iou.js',
   './js/views/security.js',
   './js/views/settings.js',

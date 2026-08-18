@@ -2,6 +2,19 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/vi/1.0.0/). Phiên bản = `APP_VERSION` = `CACHE_VERSION`.
 
+## [2.6.0] — 2026-08-18 — P2 Module C: phân bổ đầu tư theo lớp tài sản (không gợi ý mã, có disclaimer)
+
+### Thêm
+- **Hồ sơ rủi ro** 6 câu (tuổi, kỳ hạn, thu nhập, phản ứng khi danh mục giảm 20%, kinh nghiệm, mục tiêu) → điểm 0–100 → 5 hồ sơ (Thận trọng / Ôn hòa / Cân bằng / Tăng trưởng / Năng động); bắt buộc xác nhận "không phải tư vấn đầu tư".
+- **Phân bổ mục tiêu theo lớp tài sản** (tiền mặt & thanh khoản, thu nhập cố định, cổ phiếu/quỹ, vàng, bất động sản, khác) theo hồ sơ, tự giảm cổ phiếu khi kỳ hạn ngắn; **so với phân bổ hiện tại** tính từ Tài sản ròng (ví → tiền mặt, sổ tiết kiệm → cố định, cổ phiếu/quỹ, vàng, BĐS, crypto; bỏ xe và phải thu) → chênh lệch VND, hành động "cần thêm / đang dư / trong ngưỡng ±5%", gợi ý tái cân bằng bằng tiền góp mới.
+- **Điều kiện tiên quyết**: quỹ khẩn cấp < 3 tháng hoặc nợ lãi ≥ 20%/năm → chặn; chưa đủ mục tiêu quỹ hoặc nợ ≥ 12% → cảnh báo.
+- **Kế hoạch góp đều (DCA)**: gợi ý số tiền/tháng từ thặng dư TB 3 tháng trừ phần bồi quỹ khẩn cấp; chia theo lớp; **dự phóng** lãi kép theo lợi suất giả định người dùng tự đặt (mặc định thận trọng), mốc theo năm; disclaimer riêng.
+- Thẻ **Phân bổ đầu tư** ở Trang chủ (CTA / hồ sơ + hành động lớn nhất / cảnh báo chặn); mục mới trong tab Ngân sách (`#/budget?section=invest`).
+- Unit test engine phân bổ (điểm/hồ sơ, mục tiêu tổng 100 & glide theo kỳ hạn, phân bổ hiện tại, so sánh, điều kiện tiên quyết, DCA, gợi ý số tiền) — 113 test tổng; E2E +7 kiểm tra (gồm kiểm tra không có mã cổ phiếu/quỹ/coin trong nội dung).
+
+### Ghi chú
+- **Module D (tin tức/thị trường qua GitHub Actions) đã được bỏ** theo quyết định của chủ dự án — xem `docs/P2-plan.md`.
+
 ## [2.5.0] — 2026-08-18 — P1d-2: wizard nhập CSV/Excel + mẫu sao kê ngân hàng VN, khóa PIN & mã hóa dữ liệu
 
 ### Thêm

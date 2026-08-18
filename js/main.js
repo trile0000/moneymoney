@@ -20,6 +20,7 @@ import { initTx, renderTx } from './views/tx.js';
 import { initBudget, renderBudget } from './views/budget.js';
 import { initWealth, renderWealth, snapshotNow, healthSummary, syncBadges } from './views/wealth.js';
 import { initIou, renderIou } from './views/iou.js';
+import { initInvest, renderInvest } from './views/invest.js';
 import { shouldOnboard, runOnboarding } from './ui/onboarding.js';
 import { openCsvWizard } from './ui/csvWizard.js';
 import { showLockScreen } from './ui/lock.js';
@@ -67,6 +68,7 @@ const ctx = {
   initBudget(ctx);
   initWealth(ctx);
   initIou(ctx);
+  initInvest(ctx);
   initSettings(ctx);
   initSecurity(ctx);
   initUndo({
@@ -82,7 +84,7 @@ const ctx = {
 
   onView('home', (p, info) => { if (info.changed || dirty.home) { renderHome(info.changed && !dirty.home ? 'chart' : 'init'); dirty.home = false; } });
   onView('tx', (p, info) => { renderTx(info.changed ? p : {}); dirty.tx = false; });
-  onView('budget', (p, info) => { renderBudget(); renderIou(); renderWealth(info.changed ? p : {}); dirty.budget = false; });
+  onView('budget', (p, info) => { renderBudget(); renderIou(); renderInvest(); renderWealth(info.changed ? p : {}); dirty.budget = false; });
   onView('settings', (p, info) => { renderSettings(info.changed ? p : {}); renderSecurity(); dirty.settings = false; });
   startRouter();
   registerSW();
@@ -107,7 +109,7 @@ function refresh(reason = 'data') {
   const v = currentView();
   if (v === 'home') { renderHome(reason === 'theme' ? 'chart' : reason); dirty.home = false; }
   else if (v === 'tx') { renderTx(); dirty.tx = false; }
-  else if (v === 'budget') { renderBudget(); renderIou(); renderWealth(); dirty.budget = false; }
+  else if (v === 'budget') { renderBudget(); renderIou(); renderInvest(); renderWealth(); dirty.budget = false; }
   else if (v === 'settings') { renderSettings(); renderSecurity(); dirty.settings = false; }
   if (reason === 'data') afterDataChange();
 }

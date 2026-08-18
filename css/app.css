@@ -504,3 +504,7 @@ input[type="color"] { padding: 4px; height: 44px; }
 .lock-card input { text-align: center; font-size: 22px; letter-spacing: .3em; }
 .lock-card #lockRecovery { letter-spacing: .05em; font-size: 16px; text-transform: uppercase; }
 body.locked > .container, body.locked > .tabbar { filter: blur(6px); pointer-events: none; user-select: none; }
+/* P2 Module C */
+.inv-profile { margin: 10px 0; }
+.inv-row .bar-sub { line-height: 1.4; }
+.inv-table td:first-child { white-space: nowrap; }

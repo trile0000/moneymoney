@@ -15,6 +15,7 @@ import { renderBudgetList, renderGoals, renderInsights, budgetAlerts } from './b
 import { applyCardOrder, setReorderMode, currentOrder } from '../ui/cards.js';
 import { renderHomeHealth } from './wealth.js';
 import { iouHomeLine } from './iou.js';
+import { renderHomeInvest } from './invest.js';
 
 const ASSET = 'assets/mascot/sm/';
 let ctx = null;
@@ -81,7 +82,7 @@ export function renderHome(reason = 'data') {
   }
 
   renderChart({ canvas: els.chart, scopeEl: els.chartScope, heatmapEl: els.heatmap, mode: els.chartMode.value, type: els.chartType.value, monthKey: key, month: m, monthIndex: S.getMonthIndex(), categoryOf: S.getCategoryById });
-  if (reason !== 'chart' && reason !== 'filter') { renderAccounts(); renderRecent(); renderUpcoming(); renderHomeBudgets(); renderInsights($('#insightList'), $('#insightEmpty'), toLocalYM(), 3); renderGoals($('#homeGoalList'), $('#homeGoalEmpty'), { compact: true, limit: 3 }); renderHomeHealth(); }
+  if (reason !== 'chart' && reason !== 'filter') { renderAccounts(); renderRecent(); renderUpcoming(); renderHomeBudgets(); renderInsights($('#insightList'), $('#insightEmpty'), toLocalYM(), 3); renderGoals($('#homeGoalList'), $('#homeGoalEmpty'), { compact: true, limit: 3 }); renderHomeHealth(); renderHomeInvest(); }
 }
 
 function renderHomeBudgets() {

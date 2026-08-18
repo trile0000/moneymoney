@@ -4,7 +4,7 @@ PWA quản lý thu chi cá nhân cho người dùng Việt Nam. **Static site**,
 
 🔗 https://trile0000.github.io/moneymoney/
 
-## Tính năng (bản 2.5.0 — P1d)
+## Tính năng (bản 2.6.0 — P2)
 
 - **Nhiều ví/tài khoản** (tiền mặt, ngân hàng, ví điện tử, thẻ tín dụng có ngày sao kê/đến hạn), **chuyển khoản giữa ví**, số dư từng ví.
 - **Danh mục 2 cấp** có icon/màu/nhóm 50-30-20, **tag** tự do, **giao dịch định kỳ** tổng quát (ngày/tuần/tháng/năm, bù kỳ thiếu, bỏ qua 1 kỳ).
@@ -14,6 +14,7 @@ PWA quản lý thu chi cá nhân cho người dùng Việt Nam. **Static site**,
 - **Quản lý nợ** (lịch trả niên kim, trả thêm, snowball vs avalanche, mô phỏng trả sớm), **tài sản ròng** (ví + tài sản khai báo − nợ, snapshot hàng tháng), **dự báo dòng tiền 3–12 tháng**, **điểm sức khỏe tài chính 0–100** minh bạch (5 thành phần, trọng số tùy chỉnh), **streak & huy hiệu**.
 - **Công nợ cá nhân** (cho mượn / đi mượn / thu–trả nợ theo người, tính vào tài sản ròng), **ảnh hóa đơn** nén lưu IndexedDB (kèm được vào sao lưu), **onboarding 60 giây** cho người mới.
 - **Nhập CSV/Excel bằng wizard** (tự dò dòng tiêu đề, mẫu sao kê Vietcombank/Techcombank/MB/BIDV/VPBank/TPBank/ACB/MoMo/Money Lover, ánh xạ cột, tự gán danh mục theo nội dung, lưu mẫu), **khóa PIN & mã hóa AES-256** trên máy với mã khôi phục, tự khóa.
+- **Phân bổ đầu tư theo lớp tài sản** (Module C): hồ sơ rủi ro 6 câu → tỉ trọng mục tiêu, so với tài sản hiện có, điều kiện tiên quyết (quỹ khẩn cấp, nợ lãi cao), kế hoạch góp đều & dự phóng theo lợi suất giả định — luôn kèm disclaimer, **không gợi ý mã cụ thể**.
 - **Tab dưới cùng**, **dark mode**, **song ngữ Việt/Anh**.
 - Tổng kết theo tháng, mascot hổ + 5 tier (ngưỡng & thông điệp tùy chỉnh), kỷ lục — chỉ tính cho tháng hiện tại.
 - Biểu đồ danh mục / thu-chi / biến động 12 tháng / dòng tiền tích lũy / so sánh tháng trước / heatmap chi theo ngày (Chart.js self-host), ghi rõ phạm vi dữ liệu.
@@ -36,8 +37,8 @@ js/
   storage.js            localStorage + IndexedDB, quota, migration khi load
   migrate.js            schema v1 → v2 → v3 (thuần, có test)
   utils/                id (uuid), date (local YYYY-MM-DD), money (parser VND), csv (RFC 4180), dom (el/trapFocus)
-  features/             accounts, categories, recurring, filters, budgets, rule503020, emergencyFund, goals, insights, achievements (tier/streak/huy hiệu), debts, networth, forecast, health, iou (công nợ), importExport, csvWizard (engine nhập), crypto (PIN/AES-GCM)
-  views/                home (thẻ sắp xếp được), tx (thêm nhanh + lọc + danh sách), budget (ngân sách/50-30-20/quỹ/mục tiêu/insight), wealth (sức khỏe/nợ/tài sản ròng/dự báo), iou (công nợ), settings, security (PIN/mã hóa)
+  features/             accounts, categories, recurring, filters, budgets, rule503020, emergencyFund, goals, insights, achievements (tier/streak/huy hiệu), debts, networth, forecast, health, iou (công nợ), importExport, csvWizard (engine nhập), crypto (PIN/AES-GCM), allocation (Module C)
+  views/                home (thẻ sắp xếp được), tx (thêm nhanh + lọc + danh sách), budget (ngân sách/50-30-20/quỹ/mục tiêu/insight), wealth (sức khỏe/nợ/tài sản ròng/dự báo), iou (công nợ), invest (phân bổ đầu tư), settings, security (PIN/mã hóa)
   ui/                   list (virtual), editSheet, formSheet, pickers, confirm, modal, undo, gestures, charts, amountInput, toast, confetti, theme, swUpdate, receipt (ảnh hóa đơn), onboarding, csvWizard (3 bước), lock (màn hình khóa)
 service-worker.js       precache app shell, network-first HTML/JS/CSS, cache-first asset
 vendor/chart.umd.js     Chart.js 4.4.7 (MIT); vendor/xlsx.mini.min.js SheetJS 0.18.5 (Apache-2.0) đọc Excel
@@ -45,7 +46,8 @@ assets/fonts/           Baloo 2, Quicksand — woff2 subset Latin+Vietnamese (OF
 assets/mascot/sm/       mascot 192px webp/png dùng trong app (bản 1024px gốc giữ ở assets/mascot/)
 tests/                  unit test (node --test) + e2e.mjs (Playwright)
 docs/P0-review.md       xác nhận 27 lỗi P0 + lỗi bổ sung
-docs/P1-plan.md         kế hoạch P1 (P1a–P1d đã xong; tiếp theo P2: Module C phân bổ, Module D tin tức)
+docs/P1-plan.md         kế hoạch P1 (P1a–P1d đã xong)
+docs/P2-plan.md         P2 = Module C phân bổ đầu tư (v2.6.0); Module D đã bỏ theo quyết định
 scripts/bump-version.mjs
 ```
 

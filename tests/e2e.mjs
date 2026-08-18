@@ -238,7 +238,7 @@ await page.click('#reorderCards'); await sleep(100);
 const firstBefore = await page.evaluate(() => document.querySelector('#homeGrid [data-card]').dataset.card);
 await page.click('#homeGrid [data-card] .card-reorder button:nth-of-type(2)'); await sleep(200);
 const orderSaved = (await ls('mm_settings_v3')).cardOrder;
-check('Sắp xếp thẻ: thẻ đầu tiên chuyển xuống và lưu cardOrder', orderSaved.length === 9 && orderSaved[1] === firstBefore, JSON.stringify(orderSaved));
+check('Sắp xếp thẻ: thẻ đầu tiên chuyển xuống và lưu cardOrder', orderSaved.length === 10 && orderSaved[1] === firstBefore, JSON.stringify(orderSaved));
 await page.click('#reorderCards'); await sleep(100);
 await page.reload(); await page.waitForFunction(() => window.__mm && document.querySelectorAll('#accountList .acc-row').length > 0); await sleep(300);
 check('Reload giữ thứ tự thẻ', (await page.evaluate(() => document.querySelector('#homeGrid [data-card]').dataset.card)) === orderSaved[0]);
@@ -275,7 +275,7 @@ check('CSV có BOM + cột account/tags', csv.charCodeAt(0) === 0xfeff && csv.sp
 await page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller, null, { timeout: 15000 }).catch(() => {});
 await sleep(1500);
 const sw = await page.evaluate(async () => { const keys = await caches.keys(); const c = await caches.open(keys.find((k) => k.startsWith('mm-')) || 'x'); return { controller: !!navigator.serviceWorker.controller, cached: (await c.keys()).length, keys }; });
-check('SW controlling & precache đủ (>= 74 file)', sw.controller && sw.cached >= 74, JSON.stringify(sw));
+check('SW controlling & precache đủ (>= 76 file)', sw.controller && sw.cached >= 76, JSON.stringify(sw));
 await goto('#/home');
 await ctx.setOffline(true);
 await page.reload().catch(() => {});
@@ -434,6 +434,51 @@ check('Cuộn xa vẫn ít DOM', (await page.evaluate(() => document.querySelect
   await wp.reload(); await sleep(700);
   check('Đổi PIN → mở bằng PIN mới; tắt mã hóa → dữ liệu dạng thường, không còn màn hình khóa', dis.enc === undefined && dis.tx === 6 && (await wp.evaluate(() => document.getElementById('lockScreen').hidden && !!window.__mm)), JSON.stringify(dis));
   await wctx.close();
+}
+
+// 12d) P2 Module C: hồ sơ rủi ro → phân bổ mục tiêu vs hiện tại, điều kiện tiên quyết, kế hoạch DCA
+{
+  const ictx = await browser.newContext({ viewport: { width: 420, height: 860 }, locale: 'vi-VN', timezoneId: 'Asia/Ho_Chi_Minh' });
+  const ip = await ictx.newPage();
+  ip.on('pageerror', (e) => errors.push('P2 PAGEERROR ' + e.message));
+  ip.on('dialog', (d) => { errors.push('P2 DIALOG ' + d.message()); d.dismiss(); });
+  await ip.goto(BASE + '#/home');
+  await ip.waitForFunction(() => window.__mm && window.__mm.state.getData(), null, { timeout: 10000 });
+  await ip.evaluate(async () => {
+    const S = window.__mm.state; await S.updateSettings({ onboarded: true, emergencyExtra: 60000000, emergencyMonths: 6 }, { silent: true });
+    const acc = S.getAccounts()[0].id; const cats = S.getCategories(); const inc = cats.find((c) => c.kind === 'income'), exp = cats.filter((c) => c.kind === 'expense');
+    const today = new Date(); const list = []; const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    for (let m = 0; m < 4; m++) { const d = new Date(today.getFullYear(), today.getMonth() - m, 5); list.push({ type: 'income', amount: 25000000, categoryId: inc.id, category: inc.name, accountId: acc, date: ymd(d), createdAt: Math.min(d.getTime(), Date.now()) }); for (let k = 0; k < 10; k++) { const dd = new Date(today.getFullYear(), today.getMonth() - m, 1 + k * 2); list.push({ type: 'expense', amount: 800000 + k * 90000, categoryId: exp[k % 5].id, category: exp[k % 5].name, accountId: acc, date: ymd(dd), createdAt: Math.min(dd.getTime(), Date.now()) }); } }
+    await S.addMany(list);
+    await S.addAsset({ name: 'Sổ TK', type: 'savings', value: 120000000 }); await S.addAsset({ name: 'ETF', type: 'fund', value: 30000000 }); await S.addAsset({ name: 'Vàng', type: 'gold', value: 20000000 });
+    await S.addDebt({ name: 'Thẻ tín dụng', kind: 'creditcard', principal: 20000000, rate: 30, termMonths: 12, startDate: ymd(new Date(today.getFullYear(), today.getMonth() - 1, 5)), paymentDay: 5 });
+    window.__mm.refresh('data');
+  });
+  await sleep(700);
+  await ip.evaluate(() => { const m = document.getElementById('formSheet'); if (m.getAttribute('aria-hidden') === 'false') m.querySelector('[data-close]').click(); });
+  check('Trang chủ: thẻ Phân bổ đầu tư có CTA khi chưa có hồ sơ', (await ip.evaluate(() => document.getElementById('homeInvest').textContent)).includes('6 câu'));
+  await ip.evaluate(() => { location.hash = '#/budget?section=invest'; }); await sleep(500);
+  const before = await ip.evaluate(() => ({ disclaimer: document.querySelector('#sec-invest .note-box.danger').textContent.includes('KHÔNG phải tư vấn'), rows: document.querySelectorAll('#invAlloc .inv-row').length, noProfile: document.getElementById('invProfile').textContent.includes('Chưa có hồ sơ') }));
+  check('Module C: disclaimer luôn hiện; chưa có hồ sơ vẫn thấy phân bổ hiện tại (4 lớp có tiền)', before.disclaimer && before.rows === 4 && before.noProfile, JSON.stringify(before));
+  await ip.click('#invQuiz'); await sleep(300);
+  await ip.click('#fsSave'); await sleep(200);
+  const err1 = await ip.evaluate(() => document.querySelector('#formSheet .form-error').textContent);
+  for (const [k, v] of [['age', 'u30'], ['horizon', 'gt10'], ['income', 'stable'], ['drop', 'hold'], ['exp', 'funds'], ['goal', 'grow']]) await ip.selectOption('#fs_' + k, v);
+  await ip.click('#fsSave'); await sleep(200);
+  const err2 = await ip.evaluate(() => document.querySelector('#formSheet .form-error').textContent);
+  await ip.evaluate(() => document.getElementById('fs_accept').click()); await ip.click('#fsSave'); await sleep(600);
+  const prof = await ip.evaluate(() => { const inv = window.__mm.state.getSettings().invest; return { score: inv.score, profile: inv.profile, accepted: !!inv.acceptedAt, tier: document.querySelector('#invProfile .score-tier').textContent, pre: [...document.querySelectorAll('#invPrereq .note-box')].map((x) => x.textContent.slice(0, 2)), rows: [...document.querySelectorAll('#invAlloc .inv-row .bar-val')].map((x) => x.textContent), planRows: document.querySelectorAll('#invPlan tbody tr').length, plan: document.querySelector('#invPlan .status-bar').textContent }; });
+  check('Bài hồ sơ: bắt buộc đủ 6 câu + xác nhận lưu ý; điểm 84 → Năng động; mục tiêu cổ phiếu 70%; cảnh báo quỹ khẩn cấp + chặn nợ lãi 30%; DCA 5 lớp có dự phóng', err1.includes('6 câu') && err2.includes('xác nhận') && prof.score === 84 && prof.profile === 'aggressive' && prof.accepted && prof.tier === 'Năng động' && prof.pre.length === 2 && prof.rows.some((r) => r.includes('mục tiêu 70%')) && prof.planRows === 5 && prof.plan.includes('dự phóng'), JSON.stringify(prof));
+  const noTicker = await ip.evaluate(() => !/\b(VNM|FPT|HPG|VCB|BTC|ETH|SSI|E1VFVN30|DCDS)\b/.test(document.getElementById('sec-invest').textContent));
+  check('Module C không nêu mã cổ phiếu/quỹ/coin cụ thể', noTicker);
+  await ip.click('#invPlan .btn'); await sleep(300);
+  await ip.fill('#fs_monthly', '5tr'); await ip.fill('#fs_years', '15'); await ip.fill('#fs_r_stock', '9'); await ip.click('#fsSave'); await sleep(500);
+  const plan2 = await ip.evaluate(() => ({ monthly: window.__mm.state.getSettings().invest.monthly, years: window.__mm.state.getSettings().invest.years, rs: window.__mm.state.getSettings().invest.returns.stock, txt: document.querySelector('#invPlan .status-bar').textContent }));
+  check('Chỉnh kế hoạch DCA: 5tr/tháng, 15 năm, LS cổ phiếu 9% → góp 900tr, dự phóng lớn hơn góp', plan2.monthly === 5000000 && plan2.years === 15 && plan2.rs === 9 && plan2.txt.includes('900.000.000') && plan2.txt.includes('dự phóng'), JSON.stringify(plan2));
+  await ip.evaluate(() => { location.hash = '#/home'; }); await sleep(400);
+  check('Trang chủ: thẻ đầu tư hiện hồ sơ + cảnh báo chặn nợ lãi cao', (await ip.evaluate(() => document.getElementById('homeInvest').textContent)).includes('Năng động'));
+  await ip.screenshot({ path: `${OUT}/p2-invest.png`, fullPage: true });
+  await ictx.close();
 }
 
 // 13) Desktop screenshots
